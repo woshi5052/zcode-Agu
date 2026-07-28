@@ -83,7 +83,7 @@ jobs:
           with open('config/params.json') as f:
               params = json.load(f)
           engine = BacktestEngine(params=params, trade_cost=0.003)
-          result = engine.run(data, names_map=names, max_positions=3)
+          result = engine.run(data, names_map=names)
 
           # 打印报告
           print_report(result)
