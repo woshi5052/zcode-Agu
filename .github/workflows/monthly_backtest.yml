@@ -1,0 +1,156 @@
+name: Monthly Backtest & Health Check
+
+on:
+  schedule:
+    # 每月1号 08:00 UTC (16:00 北京时间)
+    - cron: '0 8 1 * *'
+  workflow_dispatch:  # 手动触发
+
+jobs:
+  backtest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Monthly Backtest (6-month window)
+        env:
+          FEISHU_APP_ID: ${{ secrets.FEISHU_APP_ID }}
+          FEISHU_APP_SECRET: ${{ secrets.FEISHU_APP_SECRET }}
+          FEISHU_CHAT_ID: ${{ secrets.FEISHU_CHAT_ID }}
+        run: |
+          python -c "
+          import sys, json
+          sys.path.insert(0, '.')
+          from datetime import datetime, timedelta
+          import akshare as ak
+          import pandas as pd
+          from data.akshare_fetcher import get_hs300_stocks, _format_code
+          from backtest.engine import BacktestEngine
+          from backtest.metrics import print_report
+          from notification.feishu import send_to_feishu
+
+          # 6个月回测窗口
+          end_date = datetime.now().strftime('%Y-%m-%d')
+          start_date = (datetime.now() - timedelta(days=180)).strftime('%Y-%m-%d')
+
+          print(f'月度回测: {start_date} → {end_date}')
+
+          # 获取成分股
+          stocks = get_hs300_stocks()
+          codes = stocks['code'].tolist()[:50]
+          names = dict(zip(stocks['code'], stocks['name']))
+
+          # 获取数据
+          print('获取数据...')
+          data = {}
+          for code in codes:
+              try:
+                  df = ak.stock_zh_a_daily(symbol=_format_code(code), adjust='qfq')
+                  if df is not None and len(df) > 100:
+                      df = df.rename(columns={'date':'date','open':'open','high':'high','low':'low','close':'close','volume':'volume'})
+                      if 'amount' not in df.columns:
+                          df['amount'] = df['close'] * df['volume']
+                      df['date'] = pd.to_datetime(df['date'])
+                      df = df.set_index('date').sort_index()
+                      data[code] = df
+              except:
+                  pass
+
+          print(f'获取: {len(data)} 支')
+
+          if len(data) < 5:
+              print('数据不足')
+              exit(1)
+
+          # 回测
+          with open('config/params.json') as f:
+              params = json.load(f)
+          engine = BacktestEngine(params=params, trade_cost=0.003)
+          result = engine.run(data, names_map=names, max_positions=3)
+
+          # 打印报告
+          print_report(result)
+
+          # 保存报告JSON
+          s = result.summary()
+          report = {
+              'date': datetime.now().strftime('%Y-%m-%d'),
+              'window': f'{start_date} → {end_date}',
+              'stocks': len(data),
+              **s
+          }
+
+          # 追加到历史报告
+          import os
+          report_file = 'reports/monthly_backtest.json'
+          history = []
+          if os.path.exists(report_file):
+              with open(report_file) as f:
+                  history = json.load(f)
+          history.append(report)
+          with open(report_file, 'w') as f:
+              json.dump(history, f, ensure_ascii=False, indent=2)
+
+          # 判断状态
+          annual = s.get('annual_return', 0)
+          pf = s.get('profit_factor', 0)
+          wr = s.get('win_rate', 0)
+
+          if annual > 0 and pf > 1.0 and wr > 35:
+              status = '🟢 健康 — 建议切换实盘'
+          elif annual > -10:
+              status = '🟡 观察 — 接近转正'
+          else:
+              status = '🔴 等待 — 继续模拟'
+
+          # 推送飞书
+          msg_recs = [{
+              'code': 'BACKTEST', 'name': f'月度回测 {datetime.now().strftime(\"%Y-%m\")}',
+              'entry_price': 0,
+              'stop_loss': 0,
+              'stop_pct': 0,
+              'target_price': 0,
+              'target_pct': 0,
+              'holding_days': 0,
+              'score': pf * 30,
+              'confidence': 'HIGH' if annual > 0 else 'LOW',
+              'signals': [
+                  f'年化{annual}%',
+                  f'PF{pf}',
+                  f'胜率{wr}%',
+                  f'回撤{s[\"max_drawdown\"]}%',
+                  status
+              ],
+          }]
+          mock_stats = {
+              'total': s['total_trades'], 'resolved': s['total_trades'],
+              'pending': 0, 'wr': wr, 'pf': pf,
+          }
+          send_to_feishu(msg_recs, mock_stats)
+          print(f'状态: {status}')
+          "
+
+      - name: Commit backtest report
+        if: always()
+        run: |
+          git config user.name "quant-bot"
+          git config user.email "bot@ashare-quant.dev"
+          git add reports/monthly_backtest.json
+          git diff --staged --quiet || git commit -m "📊 Monthly backtest $(date +%Y-%m)"
+          git push
