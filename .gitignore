@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# Data cache (large files, regenerated daily)
+data/cache/*.csv
+
+# Reports (generated daily)
+reports/*.json
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+
+# Streamlit
+.streamlit/secrets.toml

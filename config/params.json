@@ -1,0 +1,22 @@
+{
+  "_comment": "策略参数 —— 可手动调整或由优化器自动更新",
+
+  "atr_period": 10,
+  "st_multiplier": 3.0,
+  "ma_short": 20,
+  "ma_long": 60,
+  "rsi_period": 14,
+  "rsi_threshold": 35,
+  "volume_ratio": 0.8,
+  "pullback_threshold": 2.0,
+  "breakout_days": 20,
+  "atr_stop_multiplier": 2.5,
+  "max_stop_pct": 5.0,
+  "min_stop_pct": 1.5,
+  "max_return_pct": 10.0,
+  "rr_target": 1.5,
+  "top_n": 5,
+  "holding_days": 5,
+  "min_avg_amount": 50000000,
+  "min_list_days": 60
+}

@@ -1,0 +1,26 @@
+# ============================================
+# A-Share Quant Platform - Dependencies
+# ============================================
+
+# Core
+pandas>=2.0
+numpy>=1.24
+
+# Data
+akshare>=1.14
+
+# Technical Analysis
+ta>=0.11.0
+
+# Notification
+requests>=2.31
+
+# ModelScope AI (Phase 2)
+modelscope>=1.18
+
+# Web Dashboard (Phase 2)
+streamlit>=1.30
+plotly>=5.18
+
+# Utilities
+python-dateutil>=2.8
