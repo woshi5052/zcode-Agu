@@ -65,11 +65,10 @@ FEISHU_ENABLED = bool(
 )
 
 # ============================================
-# ModelScope AI 增强（Phase 2）
+# AI增强 —— DeepSeek API
 # ============================================
-MODELSCOPE_TOKEN = os.getenv("MODELSCOPE_TOKEN", "")
-MODELSCOPE_SENTIMENT_MODEL = "iic/nlp_structbert_sentiment-classification_chinese-base"
-AI_ENABLED = bool(MODELSCOPE_TOKEN)
+DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "")
+AI_ENABLED = bool(DEEPSEEK_API_KEY)
 
 # ============================================
 # GitHub Actions 环境检测
