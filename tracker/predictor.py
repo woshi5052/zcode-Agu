@@ -57,10 +57,8 @@ def add_predictions(recommendations: list[dict], holding_days: int = 5):
             "code": r["code"],
             "name": r.get("name", ""),
             "entry_price": r["entry_price"],
-            "target_price": r["take_profit"],
             "stop_loss": r["stop_loss"],
-            "rr_ratio": r["rr_ratio"],
-            "holding_days": holding_days,
+            "stop_pct": r.get("stop_pct", 0),
             "confidence": r.get("confidence", "LOW"),
             "signals": r.get("signals", []),
             "status": "pending",
@@ -97,17 +95,8 @@ def check_predictions(data_dict: dict) -> dict:
 
         current_price = df["close"].iloc[-1]
 
-        # 检查止盈
-        if current_price >= pred["target_price"]:
-            pred["status"] = "hit_target"
-            pred["pnl_pct"] = round(
-                (pred["target_price"] - pred["entry_price"]) / pred["entry_price"] * 100, 2
-            )
-            pred["closed_date"] = today
-            updated = True
-
-        # 检查止损
-        elif current_price <= pred["stop_loss"]:
+        # 检查止损（v2：移动止损，这里用初始止损近似）
+        if current_price <= pred["stop_loss"]:
             pred["status"] = "hit_stop"
             pred["pnl_pct"] = round(
                 (pred["stop_loss"] - pred["entry_price"]) / pred["entry_price"] * 100, 2
@@ -119,7 +108,7 @@ def check_predictions(data_dict: dict) -> dict:
         else:
             try:
                 entry_date = datetime.strptime(pred["date"], "%Y-%m-%d")
-                max_hold = pred.get("holding_days", 10)
+                max_hold = 20  # v2 最大持仓
                 if datetime.now() - entry_date > timedelta(days=max_hold):
                     pred["status"] = "expired"
                     pred["pnl_pct"] = round(
@@ -140,8 +129,8 @@ def check_predictions(data_dict: dict) -> dict:
 def calc_stats(predictions: list[dict]) -> dict:
     """计算统计数据"""
     resolved = [p for p in predictions if p["status"] != "pending"]
-    wins = [p for p in resolved if p["status"] == "hit_target"]
-    losses = [p for p in resolved if p["status"] in ("hit_stop", "expired")]
+    wins = [p for p in resolved if p.get("pnl_pct", 0) > 0]
+    losses = [p for p in resolved if p.get("pnl_pct", 0) <= 0]
 
     total_win = sum(p.get("pnl_pct", 0) for p in wins) if wins else 0
     total_loss = abs(sum(p.get("pnl_pct", 0) for p in losses)) if losses else 0
