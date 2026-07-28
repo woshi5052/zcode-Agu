@@ -94,12 +94,3 @@ jobs:
           send_to_feishu(results, stats)
           print('推送完成')
           "
-
-      - name: Commit reports
-        if: always()
-        run: |
-          git config user.name "quant-bot"
-          git config user.email "bot@ashare-quant.dev"
-          git add reports/ data/cache/ config/params.json
-          git diff --staged --quiet || git commit -m "📊 Daily update $(date +%Y-%m-%d)"
-          git push

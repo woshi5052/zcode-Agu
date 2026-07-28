@@ -146,12 +146,3 @@ jobs:
           send_to_feishu(msg_recs, mock_stats)
           print(f'状态: {status}')
           "
-
-      - name: Commit backtest report
-        if: always()
-        run: |
-          git config user.name "quant-bot"
-          git config user.email "bot@ashare-quant.dev"
-          git add reports/monthly_backtest.json
-          git diff --staged --quiet || git commit -m "📊 Monthly backtest $(date +%Y-%m)"
-          git push
