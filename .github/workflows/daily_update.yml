@@ -17,6 +17,7 @@ jobs:
   quant-update:
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    permissions: write-all
 
     steps:
       - name: Checkout

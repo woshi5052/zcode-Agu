@@ -72,7 +72,7 @@ def fetch_index_data(data_dict: dict = None) -> "pd.DataFrame | None":
             count = 0
             for c in closes:
                 aligned = c.reindex(all_dates)
-                synth["close"] += aligned.fillna(method="ffill").fillna(0)
+                synth["close"] += aligned.ffill().fillna(0)
                 count += 1
             synth["close"] /= count
             synth["open"] = synth["close"]
@@ -173,15 +173,10 @@ def run_backtest(start: str, end: str, stock_count: int = 50):
     print(f"  区间: {start} → {end} | 股票: {stock_count}")
 
     # 获取成分股
-    step("Step 1: 获取成分股+指数")
+    step("Step 1: 获取成分股")
     stocks = get_hs300_stocks()
     codes = stocks['code'].tolist()[:stock_count]
     names = dict(zip(stocks['code'], stocks['name']))
-
-    # 获取指数（合成）
-    index_df = fetch_index_data(data)
-    if index_df is None:
-        print("  [WARN] 无指数数据，跳过过滤")
 
     # 获取个股数据
     start_dt = datetime.strptime(start, "%Y-%m-%d")
@@ -212,6 +207,11 @@ def run_backtest(start: str, end: str, stock_count: int = 50):
         _time.sleep(0.25)
 
     print(f"\n  获取: {len(data)}/{len(codes)} 支")
+
+    # 合成指数
+    index_df = fetch_index_data(data)
+    if index_df is None:
+        print("  [WARN] 无指数数据，跳过过滤")
 
     if len(data) < 5:
         print("[ERROR] 数据不足")
