@@ -57,9 +57,9 @@ def build_message(recommendations: list[dict], stats: dict = None) -> str:
     """构建飞书文本消息"""
 
     lines = [
-        "📊 A股量化日报",
+        "📊 A股量化日报 v2.0",
         f"分析日期: {datetime.now().strftime('%Y-%m-%d %H:%M')} | 数据: AKShare",
-        f"入选: {len(recommendations)}支 | 股票池: 沪深300 → 策略精选",
+        f"入选: {len(recommendations)}支 | 策略: 趋势跟随+移动止损",
         "━━━━━━━━━━━━━━━━━━━",
     ]
 
@@ -68,14 +68,13 @@ def build_message(recommendations: list[dict], stats: dict = None) -> str:
             conf_emoji = {"HIGH": "🟢", "MEDIUM": "🟡", "LOW": "🔴"}
             emoji = conf_emoji.get(r.get("confidence", "LOW"), "🔴")
             ai_tag = r.get("ai_sentiment", "")
-            hold = r.get("holding_days", 5)
 
+            # v2.0: 移动止损版，建议明日开盘价入场
             lines.append(
                 f"\n{emoji} #{i} {r['name']} ({r['code']}) | {r['confidence']} 信心 {ai_tag}\n"
-                f"  买入价格: ¥{r['entry_price']}\n"
-                f"  卖出价格: ¥{r['take_profit']} (+{r['target_pct']}%)\n"
-                f"  止损价格: ¥{r['stop_loss']} (-{r['stop_pct']}%)\n"
-                f"  R/R比率: {r['rr_ratio']} | 预判持有: {hold}天\n"
+                f"  建议买入: ¥{r['entry_price']} (明日开盘)\n"
+                f"  初始止损: ¥{r['stop_loss']} (-{r['stop_pct']}%)\n"
+                f"  止损方式: ATR移动止损\n"
                 f"  信号: {'+'.join(r.get('signals', [])[:2])}"
             )
     else:
