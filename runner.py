@@ -103,10 +103,11 @@ def run_live(stock_count: int = 50):
     # 获取数据
     step("Step 1: 获取数据")
     stocks = get_hs300_stocks()
-    codes = stocks['code'].tolist()[:stock_count]
+    codes = stocks['code'].tolist()  # 全量300支
     names = dict(zip(stocks['code'], stocks['name']))
 
-    data = fetch_stock_pool_data(codes, max_stocks=stock_count)
+    data = fetch_stock_pool_data(codes, max_stocks=300)
+    print(f"  沪深300: {len(codes)}支 → 获取 {len(data)}支")
     if not data:
         print("[ERROR] 无数据")
         return
