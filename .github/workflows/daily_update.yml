@@ -55,7 +55,8 @@ jobs:
 
           with open('config/params.json') as f: params = json.load(f)
           stocks = get_hs300_stocks()
-          # 随机打乱，50支覆盖全市场
+          codes = stocks['code'].tolist()
+          # 随机50支覆盖全市场
           import random; random.shuffle(codes)
           codes = codes[:50]
           names = dict(zip(stocks['code'], stocks['name']))
