@@ -55,7 +55,7 @@ jobs:
 
           with open('config/params.json') as f: params = json.load(f)
           stocks = get_hs300_stocks()
-          codes = stocks['code'].tolist()
+          codes = stocks['code'].tolist()[:50]  # Actions限制50支,避免超时
           names = dict(zip(stocks['code'], stocks['name']))
 
           # 拉取数据
