@@ -1,5 +1,5 @@
 {
-  "_comment": "策略参数 —— v2.0 移动止损版",
+  "_comment": "策略参数 v2.1 —— 统一止损 + 大盘过滤 + 仓位管理",
 
   "atr_period": 10,
   "st_multiplier": 3.0,
@@ -11,9 +11,8 @@
   "volume_ratio": 1.2,
   "breakout_days": 20,
 
-  "atr_stop_multiplier": 2.5,
-  "trailing_atr_multiplier": 3.0,
-  "max_stop_pct": 6.0,
+  "atr_stop_multiplier": 2.0,
+  "trailing_atr_multiplier": 2.0,
   "min_stop_pct": 2.0,
 
   "top_n": 5,
@@ -21,5 +20,13 @@
   "min_list_days": 60,
   "min_avg_amount": 50000000,
 
-  "trade_cost": 0.003
+  "trade_cost": 0.003,
+
+  "index_ma_period": 20,
+  "bull_threshold": 1.02,
+  "bear_threshold": 0.98,
+  "bull_positions": 3,
+  "sideways_positions": 1,
+  "bear_positions": 0,
+  "single_position_pct": 0.20
 }

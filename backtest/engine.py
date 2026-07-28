@@ -134,18 +134,13 @@ class BacktestEngine:
         self.trade_cost = trade_cost
 
     def run(self, data_dict: dict, names_map: dict = None,
-            max_positions: int = 3) -> BacktestResult:
+            index_df: pd.DataFrame = None) -> BacktestResult:
         """
         运行回测
 
-        data_dict: {code: DataFrame} 每只股票的日K线数据（含date索引）
+        data_dict: {code: DataFrame} 日K线数据
         names_map: {code: name}
-        max_positions: 最大同时持仓数
-
-        规则：
-        - T日收盘生成信号 → T+1日开盘入场
-        - 移动止损跟踪
-        - 双边手续费 trade_cost
+        index_df: 大盘指数日K线（用于牛熊过滤）
         """
         if names_map is None:
             names_map = {}
@@ -160,18 +155,24 @@ class BacktestEngine:
             return BacktestResult([], pd.Series(), self.engine.__dict__, "", "")
 
         # 状态跟踪
-        positions: dict[str, dict] = {}  # code → 持仓信息
+        positions: dict[str, dict] = {}
         trades: list[Trade] = []
         equity = pd.Series(1.0, index=trade_dates)
-        cash_available = True  # 简化：允许同时持有多仓
 
         print(f"\n  回测日期: {trade_dates[0].strftime('%Y-%m-%d')} → {trade_dates[-1].strftime('%Y-%m-%d')}")
-        print(f"  股票数量: {len(data_dict)} | 交易日: {len(trade_dates)} | 手续费: {self.trade_cost:.2%}")
+        print(f"  股票: {len(data_dict)} | 交易日: {len(trade_dates)} | 手续费: {self.trade_cost:.2%}")
 
         # 遍历每个交易日
         for i, date in enumerate(trade_dates):
-            if i < 50:  # 跳过前50天（指标需要预热）
+            if i < 50:
                 continue
+
+            # 更新大盘状态 (v2.1)
+            if index_df is not None and date in index_df.index:
+                idx_idx = index_df.index.get_loc(date)
+                self.engine.set_index_data(index_df.iloc[:idx_idx+1])
+
+            max_pos = self.engine.get_max_positions()
 
             # === 阶段1: 检查现有持仓是否需要离场 ===
             exit_codes = []
@@ -190,7 +191,7 @@ class BacktestEngine:
                 if high_since > pos["highest_since_entry"]:
                     pos["highest_since_entry"] = high_since
                     pos["trailing_stop"] = self.engine.update_trailing_stop(
-                        df, pos["entry_price"], high_since, idx
+                        df, high_since, idx
                     )
 
                 # 检查离场
@@ -222,8 +223,12 @@ class BacktestEngine:
             for code in exit_codes:
                 del positions[code]
 
-            # === 阶段2: 生成新信号 ===
-            if len(positions) >= max_positions:
+            # === 阶段2: 生成新信号 (v2.1: 大盘过滤) ===
+            if len(positions) >= max_pos:
+                continue
+
+            # 大盘不允许开仓
+            if not self.engine.can_open_position():
                 continue
 
             candidates = []
@@ -245,8 +250,8 @@ class BacktestEngine:
             # 按评分排序
             candidates.sort(key=lambda x: x[1]["score"], reverse=True)
 
-            # 最多开仓 max_positions - len(positions)
-            slots = max_positions - len(positions)
+            # 最多开仓 max_pos - len(positions)
+            slots = max_pos - len(positions)
             for code, signal in candidates[:slots]:
                 df = data_dict[code]
                 idx = df.index.get_loc(date)
