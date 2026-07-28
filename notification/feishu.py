@@ -57,9 +57,9 @@ def build_message(recommendations: list[dict], stats: dict = None) -> str:
     """构建飞书文本消息"""
 
     lines = [
-        "📊 A股量化日报 v2.0",
+        "📊 A股量化日报",
         f"分析日期: {datetime.now().strftime('%Y-%m-%d %H:%M')} | 数据: AKShare",
-        f"入选: {len(recommendations)}支 | 策略: 趋势跟随+移动止损",
+        f"入选: {len(recommendations)}支 | v2.1 趋势+DeepSeek AI",
         "━━━━━━━━━━━━━━━━━━━",
     ]
 
@@ -69,7 +69,7 @@ def build_message(recommendations: list[dict], stats: dict = None) -> str:
             emoji = conf_emoji.get(r.get("confidence", "LOW"), "🔴")
             ai_tag = r.get("ai_sentiment", "")
 
-            # v2.0 四要素格式
+            # 四要素格式
             hold = r.get("holding_days", 20)
             tp = r.get("target_price", 0)
             tp_pct = r.get("target_pct", 0)
