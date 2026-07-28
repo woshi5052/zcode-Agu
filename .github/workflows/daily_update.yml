@@ -42,7 +42,58 @@ jobs:
           FEISHU_APP_SECRET: ${{ secrets.FEISHU_APP_SECRET }}
           FEISHU_CHAT_ID: ${{ secrets.FEISHU_CHAT_ID }}
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
-        run: python runner.py
+        run: |
+          python -c "
+          import sys, json; sys.path.insert(0, '.')
+          import akshare as ak, pandas as pd, time
+          from data.akshare_fetcher import get_hs300_stocks, _format_code
+          from strategies.filters import stock_pool_filter
+          from strategies.scoring import run_trend_analysis
+          from ai.sentiment import enhance_with_sentiment
+          from notification.feishu import send_to_feishu
+          from tracker.predictor import add_predictions, check_predictions, save_recommendations
+
+          with open('config/params.json') as f: params = json.load(f)
+          stocks = get_hs300_stocks()
+          codes = stocks['code'].tolist()
+          names = dict(zip(stocks['code'], stocks['name']))
+
+          # 拉取数据
+          print(f'拉取 {len(codes)} 支...')
+          data = {}
+          for i, code in enumerate(codes):
+              try:
+                  df = ak.stock_zh_a_daily(symbol=_format_code(code), adjust='qfq')
+                  if df is not None and len(df) > 50:
+                      df = df.rename(columns={'date':'date','open':'open','high':'high','low':'low','close':'close','volume':'volume'})
+                      if 'amount' not in df.columns: df['amount'] = df['close'] * df['volume']
+                      df['date'] = pd.to_datetime(df['date'])
+                      df = df.set_index('date').sort_index()
+                      data[code] = df
+              except: pass
+              if i % 50 == 0: print(f'  {i}/{len(codes)}')
+              time.sleep(0.15)
+
+          print(f'获取: {len(data)} 支')
+          
+          if len(data) < 10:
+              print('数据不足，跳过')
+              exit(0)
+
+          filtered = stock_pool_filter(data, names_map=names)
+          results = run_trend_analysis(filtered, names_map=names, top_n=5, params=params)
+
+          if results:
+              results = enhance_with_sentiment(results)
+              for r in results:
+                  print(f'  {r[\"name\"]} ¥{r[\"entry_price\"]}')
+
+          save_recommendations(results)
+          add_predictions(results)
+          stats = check_predictions(data)
+          send_to_feishu(results, stats)
+          print('推送完成')
+          "
 
       - name: Commit reports
         if: always()
