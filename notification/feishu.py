@@ -68,11 +68,14 @@ def build_message(recommendations: list[dict], stats: dict = None) -> str:
             conf_emoji = {"HIGH": "🟢", "MEDIUM": "🟡", "LOW": "🔴"}
             emoji = conf_emoji.get(r.get("confidence", "LOW"), "🔴")
             ai_tag = r.get("ai_sentiment", "")
+            hold = r.get("holding_days", 5)
 
             lines.append(
                 f"\n{emoji} #{i} {r['name']} ({r['code']}) | {r['confidence']} 信心 {ai_tag}\n"
-                f"  买入: ¥{r['entry_price']} | 止盈: ¥{r['take_profit']} (+{r['target_pct']}%)\n"
-                f"  止损: ¥{r['stop_loss']} (-{r['stop_pct']}%) | R/R: {r['rr_ratio']}\n"
+                f"  买入价格: ¥{r['entry_price']}\n"
+                f"  卖出价格: ¥{r['take_profit']} (+{r['target_pct']}%)\n"
+                f"  止损价格: ¥{r['stop_loss']} (-{r['stop_pct']}%)\n"
+                f"  R/R比率: {r['rr_ratio']} | 预判持有: {hold}天\n"
                 f"  信号: {'+'.join(r.get('signals', [])[:2])}"
             )
     else:

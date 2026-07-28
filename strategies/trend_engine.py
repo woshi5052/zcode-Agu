@@ -47,6 +47,7 @@ class TrendEngine:
         self.min_stop_pct = p.get("min_stop_pct", 1.5) / 100
         self.max_return_pct = p.get("max_return_pct", 10.0) / 100
         self.rr_target = p.get("rr_target", 1.5)
+        self.holding_days = p.get("holding_days", 5)
 
     # ================================================
     # 过滤条件检查
@@ -283,11 +284,12 @@ class TrendEngine:
             "code": str(code),
             "name": str(name),
             "entry_price": levels["entry_price"],
-            "stop_loss": levels["stop_loss"],
             "take_profit": levels["take_profit"],
+            "stop_loss": levels["stop_loss"],
             "stop_pct": levels["stop_pct"],
             "target_pct": levels["target_pct"],
             "rr_ratio": levels["rr_ratio"],
+            "holding_days": self.holding_days,
             "score": score,
             "confidence": confidence,
             "signals": signals,
