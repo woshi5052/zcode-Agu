@@ -338,12 +338,20 @@ class TrendEngine:
         else:
             confidence = "LOW"
 
+        # 参考目标价（乐观估计，基于ATR，非固定止盈）
+        atr = calc_atr(df["high"], df["low"], df["close"], self.atr_period).iloc[idx]
+        target_price = round(entry_price + atr * self.trailing_atr_mult, 2)
+        target_pct = round((target_price - entry_price) / entry_price * 100, 2)
+
         return {
             "code": str(code),
             "name": str(name),
             "entry_price": entry_price,
             "stop_loss": stop_loss,
             "stop_pct": stop_pct,
+            "target_price": target_price,
+            "target_pct": target_pct,
+            "holding_days": self.max_holding_days,
             "score": score,
             "confidence": confidence,
             "signals": signals,

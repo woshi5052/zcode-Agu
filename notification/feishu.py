@@ -69,12 +69,17 @@ def build_message(recommendations: list[dict], stats: dict = None) -> str:
             emoji = conf_emoji.get(r.get("confidence", "LOW"), "🔴")
             ai_tag = r.get("ai_sentiment", "")
 
-            # v2.0: 移动止损版，建议明日开盘价入场
+            # v2.0 四要素格式
+            hold = r.get("holding_days", 20)
+            tp = r.get("target_price", 0)
+            tp_pct = r.get("target_pct", 0)
+
             lines.append(
                 f"\n{emoji} #{i} {r['name']} ({r['code']}) | {r['confidence']} 信心 {ai_tag}\n"
-                f"  建议买入: ¥{r['entry_price']} (明日开盘)\n"
-                f"  初始止损: ¥{r['stop_loss']} (-{r['stop_pct']}%)\n"
-                f"  止损方式: ATR移动止损\n"
+                f"  买入价格: ¥{r['entry_price']}\n"
+                f"  卖出价格: ¥{tp} (+{tp_pct}%) 参考\n"
+                f"  止损价格: ¥{r['stop_loss']} (-{r['stop_pct']}%)\n"
+                f"  预判持有: {hold}天 | 止损方式: ATR移动止损\n"
                 f"  信号: {'+'.join(r.get('signals', [])[:2])}"
             )
     else:
