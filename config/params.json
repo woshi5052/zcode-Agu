@@ -12,7 +12,7 @@
   "breakout_days": 20,
 
   "atr_stop_multiplier": 2.0,
-  "trailing_atr_multiplier": 2.0,
+  "trailing_atr_multiplier": 3.0,
   "min_stop_pct": 2.0,
 
   "top_n": 5,
@@ -28,5 +28,6 @@
   "bull_positions": 3,
   "sideways_positions": 1,
   "bear_positions": 0,
-  "single_position_pct": 0.20
+  "single_position_pct": 0.2,
+  "cooldown_days": 50
 }

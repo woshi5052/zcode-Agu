@@ -15,6 +15,8 @@ for f in files:
 
 with open('config/params.json') as f:
     params = json.load(f)
+    params['cooldown_days'] = 5
+    params['trailing_atr_multiplier'] = 3.0
 
 engine = BacktestEngine(params=params, trade_cost=0.003)
 result = engine.run(data)
