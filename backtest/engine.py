@@ -101,6 +101,8 @@ class BacktestEngine:
         self.engine = TrendEngine(params)
         self.broker = Broker(trade_cost)
         self.trade_cost = trade_cost
+        self.cooldown_days = params.get("cooldown_days", 0) if params else 0
+        self.trail_mult = params.get("trailing_atr_multiplier", 2.0) if params else 2.0
         set_config(SellConfig.load())
 
     def run(self, data_dict: dict, names_map: dict = None,
@@ -116,10 +118,11 @@ class BacktestEngine:
         pending_sell = []
         sell_reasons = {}
         trades = []
+        cooldown = {}  # code → cooldown_until_date
         equity = pd.Series(1.0, index=all_dates)
 
         print(f"\n  回测: {all_dates[0].strftime('%Y-%m-%d')} → {all_dates[-1].strftime('%Y-%m-%d')}")
-        print(f"  股票: {len(data_dict)} | 交易日: {len(all_dates)}")
+        print(f"  股票: {len(data_dict)} | 交易日: {len(all_dates)} | 冷却:{self.cooldown_days}天 | 止损:{self.trail_mult}×ATR")
 
         for i, date in enumerate(all_dates):
             if i < 50: continue
@@ -144,8 +147,15 @@ class BacktestEngine:
                             sell_reasons.get(order.symbol, "系统卖出"),
                             round(pnl * 100, 2), holding))
                         del positions[order.symbol]
+                        # 冷却期: 止损卖出后禁止重买
+                        if self.cooldown_days > 0 and "止损" in sell_reasons.get(order.symbol, ""):
+                            cooldown[order.symbol] = date + pd.Timedelta(days=self.cooldown_days)
             pending_sell.clear()
             sell_reasons.clear()
+
+            # ---- 清理过期冷却 ----
+            expired = [c for c, d in cooldown.items() if date >= d]
+            for c in expired: del cooldown[c]
 
             # ---- 执行买单 ----
             for order in list(pending_buy):
@@ -185,7 +195,7 @@ class BacktestEngine:
                 atr = calc_atr(df["high"], df["low"], df["close"], 14)
                 st = calc_supertrend(df["high"], df["low"], df["close"], 14, 3.0)
 
-                trailing = pos["highest_since_entry"] - 2.0 * float(atr.iloc[idx])
+                trailing = pos["highest_since_entry"] - self.trail_mult * float(atr.iloc[idx])
                 effective = max(trailing, pos["stop_loss"])
 
                 exit_now = False
@@ -208,6 +218,7 @@ class BacktestEngine:
             cands = []
             for code, df in data_dict.items():
                 if code in positions: continue
+                if code in cooldown: continue   # 冷却期跳过
                 if date not in df.index: continue
                 idx = df.index.get_loc(date)
                 result = self.engine.analyze(
