@@ -1,7 +1,7 @@
 {
   "_comment": "策略参数 v2.1 —— 统一止损 + 大盘过滤 + 仓位管理",
 
-  "atr_period": 10,
+  "atr_period": 14,
   "st_multiplier": 3.0,
   "ma_short": 20,
   "ma_long": 60,
