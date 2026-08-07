@@ -29,5 +29,5 @@
   "sideways_positions": 1,
   "bear_positions": 0,
   "single_position_pct": 0.2,
-  "cooldown_days": 50
+  "cooldown_days": 5
 }
