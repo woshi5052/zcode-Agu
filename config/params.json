@@ -28,6 +28,6 @@
   "bull_positions": 3,
   "sideways_positions": 1,
   "bear_positions": 0,
-  "single_position_pct": 0.2,
+  "single_position_pct": 0.15,
   "cooldown_days": 5
 }
