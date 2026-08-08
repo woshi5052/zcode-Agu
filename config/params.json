@@ -1,6 +1,5 @@
 {
-  "_comment": "策略参数 v3.0-fixed —— 修复版：SellEngine 真接入 + 大盘过滤生效 + 净值按日估值",
-
+  "_comment": "\u7b56\u7565\u53c2\u6570 v3.0-fixed \u2014\u2014 \u4fee\u590d\u7248\uff1aSellEngine \u771f\u63a5\u5165 + \u5927\u76d8\u8fc7\u6ee4\u751f\u6548 + \u51c0\u503c\u6309\u65e5\u4f30\u503c",
   "atr_period": 14,
   "st_multiplier": 3.0,
   "ma_short": 20,
@@ -10,27 +9,22 @@
   "rsi_upper": 65,
   "volume_ratio": 1.2,
   "breakout_days": 20,
-
   "atr_stop_multiplier": 3.0,
   "trailing_atr_multiplier": 3.0,
   "min_stop_pct": 2.0,
-
   "top_n": 5,
   "max_holding_days": 20,
   "min_list_days": 60,
   "min_avg_amount": 50000000,
-
   "trade_cost": 0.003,
-
   "index_ma_period": 20,
   "bull_threshold": 1.02,
   "bear_threshold": 0.98,
   "bull_positions": 3,
   "sideways_positions": 1,
   "bear_positions": 0,
-  "single_position_pct": 0.15,
+  "single_position_pct": 0.3,
   "cooldown_days": 5,
-
   "sell_config": {
     "atr_stop_multiplier": 3.0,
     "profit_trigger_1": 3.0,

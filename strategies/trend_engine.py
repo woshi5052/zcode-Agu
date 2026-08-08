@@ -121,13 +121,11 @@ class TrendEngine:
         if close.iloc[idx] <= ma20.iloc[idx]:
             reasons.append("价格低于MA20")
 
-        # 3. RSI 区间
+        # 3. RSI 下限（上限移到信号检测后）
         rsi = calc_rsi(close, self.rsi_period)
         rsi_val = rsi.iloc[idx]
         if rsi_val <= self.rsi_threshold:
             reasons.append(f"RSI过低({rsi_val:.1f})")
-        if rsi_val >= self.rsi_upper:
-            reasons.append(f"RSI过高({rsi_val:.1f})")
 
         # 4. 量能
         vol_ma20 = volume.rolling(20).mean()
@@ -265,6 +263,12 @@ class TrendEngine:
         signals = self.detect_entry_signals(df, idx)
         if not signals:
             return None
+
+        # RSI上限：突破信号豁免(强势突破RSI自然偏高), 金叉信号保留40-65
+        has_breakout = any("突破" in s for s in signals)
+        rsi_val = calc_rsi(df["close"], self.rsi_period).iloc[idx]
+        if not has_breakout and rsi_val >= self.rsi_upper:
+            return None  # 非突破信号, RSI过高过滤
 
         close = df["close"].iloc[idx]
         entry_price = round(close, 2)
