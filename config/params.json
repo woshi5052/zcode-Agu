@@ -23,7 +23,7 @@
   "bull_positions": 3,
   "sideways_positions": 1,
   "bear_positions": 0,
-  "single_position_pct": 0.3,
+  "single_position_pct": 0.10,
   "cooldown_days": 5,
   "sell_config": {
     "atr_stop_multiplier": 3.0,
