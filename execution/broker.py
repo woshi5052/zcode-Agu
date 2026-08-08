@@ -1,81 +1,72 @@
 """
-虚拟券商 — 最小实现
-v3.0: 回测与实盘共用
+虚拟券商 v3.0 —— 回测/实盘共用成交规则
+涨停拒买 / 跌停拒卖 / 停牌拒单 / T+1
 """
 
 from dataclasses import dataclass
 from enum import Enum
 
+from execution.cost import CostModel
+
 
 class OrderSide(Enum):
-    BUY = "buy"
-    SELL = "sell"
+    BUY = "BUY"
+    SELL = "SELL"
 
 
 @dataclass
 class Order:
     symbol: str
     side: OrderSide
-    shares: int
-    limit_price: float = 0.0   # 0 = 市价
+    shares: int = 0
 
 
 @dataclass
 class Fill:
     symbol: str
-    side: OrderSide
-    shares: int
     price: float
+    shares: int
     fee: float
 
 
 class Broker:
-    """虚拟券商"""
+    """统一成交规则：回测与实盘共用（唯一差别是成交价来源）"""
 
-    def __init__(self, trade_cost: float = 0.003):
-        self.trade_cost = trade_cost
+    def __init__(self, cost_model: CostModel = None, mode: str = "backtest"):
+        self.cost = cost_model or CostModel()
+        self.mode = mode  # backtest / paper / live
 
-    def try_fill(self, order: Order, bar_open: float, bar_high: float,
-                 bar_low: float, bar_close: float, volume: float = 0) -> Fill | None:
+    def try_fill(self, order: Order, open_p: float, high_p: float,
+                 low_p: float, close_p: float, prev_close: float,
+                 volume: float) -> Fill | None:
+        """尝试成交，返回 Fill 或 None（拒单）。
+
+        规则：
+        - 涨停（开盘涨幅≥9.8% 或 触及涨停价）→ 买单拒单
+        - 跌停（开盘跌幅≤-9.8%）→ 卖单拒单
+        - 停牌（当日无成交量）→ 拒单
+        - 成交价：买入用开盘价+滑点，卖出用开盘价-滑点
         """
-        尝试成交
+        if volume is None or volume <= 0:
+            return None  # 停牌
 
-        Args:
-            order:     订单
-            bar_open:  当日开盘价
-            bar_high:  当日最高价
-            bar_low:   当日最低价
-            bar_close: 当日收盘价
-            volume:    当日成交量 (0 = 停牌)
+        change_pct = (open_p - prev_close) / prev_close if prev_close else 0
 
-        Returns:
-            Fill 或 None (拒单)
-        """
-        # 停牌拒单
-        if volume <= 0:
+        if order.side == OrderSide.BUY:
+            if change_pct >= 0.098:
+                return None  # 涨停买不进
+            price = open_p * (1 + self.cost.slippage_rate)
+        else:
+            if change_pct <= -0.098:
+                return None  # 跌停卖不出
+            price = open_p * (1 - self.cost.slippage_rate)
+
+        if order.shares <= 0:
+            # 份额必须由调用方算好（A股 100 股整数倍）
             return None
 
-        # 涨停拒买 (涨幅 ≥ 9.8%)
-        is_limit_up = bar_low >= bar_open * 1.098
-        if order.side == OrderSide.BUY and is_limit_up:
-            return None
+        shares = order.shares
+        fee = (self.cost.buy_cost(price, shares) if order.side == OrderSide.BUY
+               else self.cost.sell_cost(price, shares))
 
-        # 跌停拒卖
-        is_limit_down = bar_high <= bar_open * 0.902
-        if order.side == OrderSide.SELL and is_limit_down:
-            return None
-
-        # 成交价 (回测用开盘价)
-        fill_price = bar_open if order.limit_price == 0 else min(
-            order.limit_price, bar_open) if order.side == OrderSide.BUY else max(
-            order.limit_price, bar_open)
-
-        fee = fill_price * order.shares * self.trade_cost
-
-        return Fill(
-            symbol=order.symbol,
-            side=order.side,
-            shares=order.shares,
-            price=fill_price,
-            fee=round(fee, 2),
-        )
+        return Fill(symbol=order.symbol, price=price, shares=shares, fee=fee)

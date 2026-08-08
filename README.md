@@ -1,106 +1,45 @@
-# 📊 A-Share Quant Platform
+# A-Share Quant Platform v3.0 (修复版)
 
-> A股量化分析平台 —— 每日自动分析沪深300，推送飞书，部署在ModelScope
-
-[![Daily Update](https://github.com/yourname/ashare-quant/actions/workflows/daily_update.yml/badge.svg)](https://github.com/yourname/ashare-quant/actions)
-[![ModelScope](https://img.shields.io/badge/ModelScope-托管-blue)](https://modelscope.cn)
-
----
-
-## 架构
-
-```
-沪深300成分股 → AKShare数据 → A股过滤 → 趋势策略引擎 → AI情绪增强 → 飞书推送
-                                    ↓
-                              ModelScope 托管 + GitHub Actions 调度
-```
-
-## 功能
-
-- 🔄 **每日自动运行**：交易日 15:30 收盘后自动分析
-- 📊 **趋势策略**：Supertrend + MA + ATR + RSI 多指标共振
-- 🧠 **AI增强**：ModelScope 中文情感分析模型辅助判断
-- 📱 **飞书推送**：每日推荐 + 历史胜率统计
-- 📈 **预测追踪**：止盈/止损/到期自动结算，计算 Profit Factor
-- 📉 **可视化面板**：Streamlit 展示推荐历史、胜率曲线
+> A股量化平台 —— 单一事实来源（SellEngine 统一回测/实盘）+ Walk-Forward 样本外验证
+> 本版本基于 11 文件夹代码审查修复：P0-A SellEngine 真接入、P0-B 大盘过滤逐日生效、P1×3 已修
 
 ## 快速开始
 
-### 1. 安装依赖
-
 ```bash
-pip install -r requirements.txt
+# 1. 数据准备：将 A 股日K CSV（含 open/high/low/close/volume/date）放入 data/cache/{code}.csv
+#    （列名 date/open/high/low/close/volume，date 为 YYYY-MM-DD）
+
+# 2. 跑 Walk-Forward 样本外验证
+python run_wf.py
+
+# 3. 跑测试
+python -m pytest tests/test_parity.py -v   # 或直接 python tests/run_tests.py
 ```
 
-### 2. 配置环境变量
-
-```bash
-# 飞书群机器人 Webhook（必填）
-export FEISHU_WEBHOOK="https://open.feishu.cn/open-apis/bot/v2/hook/xxx"
-
-# ModelScope Token（可选，用于AI增强）
-export MODELSCOPE_TOKEN="ms-xxxxxxxxxxxxxxxx"
-```
-
-### 3. 本地运行
-
-```bash
-python runner.py
-```
-
-### 4. 启动可视化面板
-
-```bash
-streamlit run app.py
-```
-
-## 文件结构
+## 目录
 
 ```
-ashare-quant/
-├── .github/workflows/
-│   └── daily_update.yml       # GitHub Actions 定时调度
-├── config/
-│   ├── settings.py            # 全局配置
-│   └── params.json            # 策略参数
-├── data/
-│   └── akshare_fetcher.py     # AKShare 数据获取
-├── strategies/
-│   ├── indicators.py          # 技术指标库
-│   ├── filters.py             # A股过滤 (ST/涨跌停/流动性)
-│   ├── trend_engine.py        # 趋势策略引擎
-│   └── scoring.py             # 综合评分
-├── ai/
-│   ├── modelscope_client.py   # ModelScope API
-│   └── sentiment.py           # AI情绪增强
-├── notification/
-│   └── feishu.py              # 飞书推送
-├── tracker/
-│   └── predictor.py           # 预测追踪 + 统计
-├── reports/                   # 输出结果
-├── app.py                     # Streamlit 面板
-└── runner.py                  # 主入口
+config/params.json        # 策略参数（含 sell_config 四层卖出配置）
+data/adjust.py            # get_price 唯一数据门面（前复权）
+data/calendar.py          # 交易日历
+data/universe.py          # point-in-time 股票池
+strategies/indicators.py  # 指标库（纯 pandas）
+strategies/trend_engine.py# 趋势策略引擎（大盘过滤+仓位管理）
+risk/sell_engine.py       # 四层卖出引擎（回测/实盘共用）
+execution/broker.py       # 虚拟券商（涨跌停/停牌/T+1）
+execution/cost.py         # 成本模型
+backtest/engine.py        # 事件驱动回测引擎（SellEngine 真接入）
+backtest/metrics.py       # 绩效指标
+validation/walkforward.py # Walk-Forward 滚动验证
+tests/test_parity.py      # 对拍测试
+run_wf.py                 # WF 运行入口
 ```
 
-## GitHub Actions 配置
+## 关键设计
 
-在仓库 Settings → Secrets 中添加：
+- **单一事实来源**：回测引擎调用 `risk.sell_engine.evaluate()`，实盘 runner 也调它——同一份卖出逻辑
+- **大盘过滤逐日生效**：每个交易日用当日指数切片更新 regime，bear 空仓
+- **净值按日估值**：含持仓浮亏，回撤真实
+- **止损基于实际成交价**：买入成交后重算止损线
 
-| Secret | 说明 |
-|--------|------|
-| `FEISHU_WEBHOOK` | 飞书群机器人 Webhook 地址 |
-| `MODELSCOPE_TOKEN` | ModelScope SDK Token（可选） |
-
-## ModelScope 部署
-
-1. 在 [modelscope.cn](https://modelscope.cn) 创建模型仓库
-2. 推送代码到 ModelScope
-3. 在 ModelScope Spaces 部署 Streamlit 面板
-
-## 免责声明
-
-⚠️ 本项目仅供学习研究，**不构成任何投资建议**。量化交易存在固有风险，过往业绩不代表未来表现。
-
-## License
-
-MIT
+> ⚠️ 本项目仅供学习研究，不构成任何投资建议。过往业绩不代表未来表现。

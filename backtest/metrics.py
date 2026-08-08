@@ -1,19 +1,18 @@
 """
-回测绩效指标
+回测绩效指标 v3.0
 """
 
 import numpy as np
 import pandas as pd
-from backtest.engine import BacktestResult, Trade
 
 
-def by_year(result: BacktestResult) -> pd.DataFrame:
+def by_year(trades: list) -> pd.DataFrame:
     """按年分组统计"""
-    if not result.trades:
+    if not trades:
         return pd.DataFrame()
 
     rows = []
-    for trade in result.trades:
+    for trade in trades:
         year = trade.exit_date[:4]
         rows.append({
             "year": year,
@@ -39,52 +38,15 @@ def by_year(result: BacktestResult) -> pd.DataFrame:
     return grouped
 
 
-def by_market_regime(result: BacktestResult,
-                     benchmark: pd.Series = None) -> dict:
-    """
-    按市场状态分组：
-    - 牛市：均线多头排列 + 价格在年线上方
-    - 熊市：均线空头排列 + 价格在年线下方
-    - 震荡：其他
-    """
-    if not result.trades or benchmark is None:
-        return {}
-
-    # 简化：用年线方向判断
-    ma250 = benchmark.rolling(250).mean()
-    regimes = {}
-
-    for trade in result.trades:
-        date = pd.Timestamp(trade.exit_date)
-        if date in ma250.index and date in benchmark.index:
-            if benchmark.loc[date] > ma250.loc[date] * 1.05:
-                regime = "bull"
-            elif benchmark.loc[date] < ma250.loc[date] * 0.95:
-                regime = "bear"
-            else:
-                regime = "sideways"
-        else:
-            regime = "unknown"
-
-        if regime not in regimes:
-            regimes[regime] = {"trades": 0, "wins": 0, "total_pnl": 0}
-        regimes[regime]["trades"] += 1
-        regimes[regime]["wins"] += 1 if trade.pnl_pct > 0 else 0
-        regimes[regime]["total_pnl"] += trade.pnl_pct
-
-    result = {}
-    for regime, data in regimes.items():
-        result[regime] = {
-            "trades": data["trades"],
-            "win_rate": round(data["wins"] / data["trades"] * 100, 1),
-            "total_pnl": round(data["total_pnl"], 2),
-            "avg_pnl": round(data["total_pnl"] / data["trades"], 2),
-        }
-
-    return result
+def exit_reasons(trades: list) -> dict:
+    """离场原因分布"""
+    reasons = {}
+    for t in trades:
+        reasons[t.exit_reason] = reasons.get(t.exit_reason, 0) + 1
+    return dict(sorted(reasons.items(), key=lambda x: -x[1]))
 
 
-def print_report(result: BacktestResult):
+def print_report(result) -> None:
     """打印回测报告"""
     s = result.summary()
 
@@ -104,18 +66,13 @@ def print_report(result: BacktestResult):
     print(f"  平均持仓:  {s['avg_hold_days']}天")
     print(f"{'='*60}")
 
-    # 按年
-    yearly = by_year(result)
+    yearly = by_year(result.trades)
     if not yearly.empty:
         print(f"\n  按年统计:")
         print(yearly.to_string(index=False))
 
-    # 按离场原因
-    if result.trades:
-        reasons = {}
-        for t in result.trades:
-            r = t.exit_reason
-            reasons[r] = reasons.get(r, 0) + 1
+    reasons = exit_reasons(result.trades)
+    if reasons:
         print(f"\n  离场原因分布:")
-        for r, c in sorted(reasons.items(), key=lambda x: -x[1]):
+        for r, c in reasons.items():
             print(f"    {r}: {c}次")

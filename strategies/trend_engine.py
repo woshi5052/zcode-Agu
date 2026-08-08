@@ -1,8 +1,8 @@
 """
-趋势策略引擎 v2.1 —— 统一ATR止损 + 大盘过滤 + 仓位管理
+趋势策略引擎 v3.0 —— 统一ATR止损 + 大盘过滤 + 仓位管理
+修复：atr_period 默认 14；can_open_position 由回测引擎真正调用
 """
 
-import numpy as np
 import pandas as pd
 
 from strategies.indicators import calc_ma, calc_rsi, calc_macd, calc_atr, calc_supertrend
@@ -10,23 +10,20 @@ from strategies.indicators import calc_ma, calc_rsi, calc_macd, calc_atr, calc_s
 
 class TrendEngine:
     """
-    趋势跟随策略引擎 v2.1
+    趋势跟随策略引擎 v3.0
 
-    新增:
+    新增（相对 v2.1）:
       - 大盘过滤: HS300指数 < MA20 → 不开仓
-      - 统一止损: ATR×2 初始止损 + ATR×2 移动止损
+      - 统一止损: ATR×3.0 初始止损 + ATR×3.0 移动止损
       - 仓位管理: 强势3仓 / 震荡1仓 / 弱势空仓
-
-    保留:
-      - Supertrend多头 + Close>MA20 + RSI区间 + 量比过滤
-      - 突破 / MACD 入场信号
+      - 冷却期: 止损卖出后 N 天禁止重买（由回测引擎执行）
     """
 
     def __init__(self, params: dict = None):
         p = params or {}
 
         # 指标参数
-        self.atr_period = p.get("atr_period", 10)
+        self.atr_period = p.get("atr_period", 14)
         self.st_multiplier = p.get("st_multiplier", 3.0)
         self.ma_short = p.get("ma_short", 20)
         self.ma_long = p.get("ma_long", 60)
@@ -38,16 +35,16 @@ class TrendEngine:
         self.volume_ratio = p.get("volume_ratio", 1.2)
         self.breakout_days = p.get("breakout_days", 20)
 
-        # 统一止损 (v2.1 简化)
-        self.atr_stop_mult = p.get("atr_stop_multiplier", 2.0)
-        self.trailing_atr_mult = p.get("trailing_atr_multiplier", 2.0)
+        # 统一止损 (v3.0: 3.0)
+        self.atr_stop_mult = p.get("atr_stop_multiplier", 3.0)
+        self.trailing_atr_mult = p.get("trailing_atr_multiplier", 3.0)
         self.min_stop_pct = p.get("min_stop_pct", 2.0) / 100
 
         # 持仓管理
         self.max_holding_days = p.get("max_holding_days", 20)
-        self.single_position_pct = p.get("single_position_pct", 0.20)
+        self.single_position_pct = p.get("single_position_pct", 0.15)
 
-        # 大盘过滤 (v2.1 新增)
+        # 大盘过滤
         self.index_ma_period = p.get("index_ma_period", 20)
         self.bull_threshold = p.get("bull_threshold", 1.02)
         self.bear_threshold = p.get("bear_threshold", 0.98)
@@ -172,12 +169,12 @@ class TrendEngine:
         return signals
 
     # ================================================
-    # 统一止损 (v2.1 简化)
+    # 统一止损
     # ================================================
 
     def calc_initial_stop(self, df: pd.DataFrame, entry_price: float,
                           entry_idx: int = -1) -> float:
-        """初始止损 = 入场价 - ATR × 2.0（不低于最小止损%）"""
+        """初始止损 = 入场价 - ATR × 3.0（不低于最小止损%）"""
         high = df["high"]
         low = df["low"]
         close = df["close"]
@@ -194,7 +191,7 @@ class TrendEngine:
     def update_trailing_stop(self, df: pd.DataFrame,
                              highest_since_entry: float,
                              current_idx: int) -> float:
-        """移动止损 = 持仓最高价 - ATR × 2.0"""
+        """移动止损 = 持仓最高价 - ATR × 3.0"""
         high = df["high"]
         low = df["low"]
         close = df["close"]
@@ -203,46 +200,6 @@ class TrendEngine:
         atr_val = atr.iloc[current_idx]
 
         return round(highest_since_entry - atr_val * self.trailing_atr_mult, 2)
-
-    def check_exit(self, df: pd.DataFrame, current_idx: int,
-                   stop_price: float, holding_days: int) -> dict:
-        """检查离场条件"""
-        close = df["close"]
-        high = df["high"]
-        low = df["low"]
-
-        current_close = close.iloc[current_idx]
-
-        # 跌破移动止损
-        if current_close <= stop_price:
-            return {"exit": True, "reason": "跌破止损", "price": stop_price}
-
-        # Supertrend 翻空
-        st = calc_supertrend(high, low, close, self.atr_period, self.st_multiplier)
-        if st["direction"].iloc[current_idx] == -1:
-            return {"exit": True, "reason": "ST翻空", "price": current_close}
-
-        # 超时
-        if holding_days >= self.max_holding_days:
-            return {"exit": True, "reason": f"持仓{self.max_holding_days}天到期",
-                    "price": current_close}
-
-        return {"exit": False, "reason": "", "price": 0}
-
-    # ================================================
-    # T+1 入场
-    # ================================================
-
-    def simulate_entry(self, df: pd.DataFrame, entry_price: float,
-                       entry_idx: int) -> dict:
-        stop_loss = self.calc_initial_stop(df, entry_price, entry_idx)
-        return {
-            "entry_price": entry_price,
-            "stop_loss": stop_loss,
-            "stop_pct": round((entry_price - stop_loss) / entry_price * 100, 2),
-            "trailing_stop": stop_loss,
-            "highest_since_entry": entry_price,
-        }
 
     # ================================================
     # 评分

@@ -1,5 +1,5 @@
 {
-  "_comment": "策略参数 v2.1 —— 统一止损 + 大盘过滤 + 仓位管理",
+  "_comment": "策略参数 v3.0-fixed —— 修复版：SellEngine 真接入 + 大盘过滤生效 + 净值按日估值",
 
   "atr_period": 14,
   "st_multiplier": 3.0,
@@ -11,7 +11,7 @@
   "volume_ratio": 1.2,
   "breakout_days": 20,
 
-  "atr_stop_multiplier": 2.0,
+  "atr_stop_multiplier": 3.0,
   "trailing_atr_multiplier": 3.0,
   "min_stop_pct": 2.0,
 
@@ -29,5 +29,28 @@
   "sideways_positions": 1,
   "bear_positions": 0,
   "single_position_pct": 0.15,
-  "cooldown_days": 5
+  "cooldown_days": 5,
+
+  "sell_config": {
+    "atr_stop_multiplier": 3.0,
+    "profit_trigger_1": 3.0,
+    "profit_trigger_2": 5.0,
+    "profit_trigger_3": 10.0,
+    "profit_atr_multiplier": 1.5,
+    "time_stage_1_days": 5,
+    "time_stage_2_days": 10,
+    "time_stage_3_days": 15,
+    "time_atr_1": 2.0,
+    "time_atr_2": 1.8,
+    "time_atr_3": 1.5,
+    "time_atr_4": 1.2,
+    "max_hold_days": 20,
+    "score_sell_threshold": 6,
+    "score_broken_ma20": 3,
+    "score_heavy_volume_stagnation": 3,
+    "score_market_risk": 4,
+    "score_long_hold": 2,
+    "score_overbought": 2,
+    "score_high_profit": 1
+  }
 }

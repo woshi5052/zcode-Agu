@@ -1,18 +1,23 @@
 """
-Walk-Forward 滚动验证
-训练段调参 → 验证段参数固定 → 汇总样本外绩效
+Walk-Forward 滚动验证 v3.0-fixed
+修复：
+  [P1-1] 股票池显式化（universe.py），禁止 glob[:20]
+  [P0-B] 每个窗口回测都传 index_df（大盘过滤生效）
 """
 
 import json
 import pandas as pd
-from datetime import datetime, timedelta
+from datetime import datetime
 from dateutil.relativedelta import relativedelta
+
 from backtest.engine import BacktestEngine
 from data.adjust import get_price
+from data.universe import get_universe
 
 
 def walk_forward(
-    symbols: list[str],
+    symbols: list[str] = None,
+    index_symbol: str = None,
     start: str = "2023-01-01",
     end: str = "2026-07-01",
     train_months: int = 12,
@@ -21,21 +26,17 @@ def walk_forward(
     base_params: dict = None,
 ) -> dict:
     """
-    滚动前推验证
+    滚动前推验证：训练段调参（可关）→ 验证段参数固定 → 汇总样本外
 
     Returns:
-        {
-            "windows": [...],    # 每窗数据
-            "oos_trades": int,   # 样本外总交易
-            "oos_pf": float,     # 样本外 PF
-            "oos_annual": float, # 样本外年化
-            "oos_winrate": float,# 样本外胜率
-            "oos_maxdd": float,  # 样本外最大回撤
-        }
+        {windows, oos_trades, oos_pf, oos_winrate, oos_annual, oos_maxdd, ...}
     """
     if base_params is None:
         with open("config/params.json") as f:
             base_params = json.load(f)
+
+    if symbols is None:
+        symbols = get_universe()  # [P1-1] 显式股票池，非 glob 截断
 
     # 生成窗口
     s = datetime.strptime(start, "%Y-%m-%d")
@@ -58,46 +59,42 @@ def walk_forward(
     print(f"股票: {len(symbols)} 支 | 区间: {start} → {end}")
 
     all_oos_trades = []
-    all_oos_equity = []
+    window_results = []
 
     for wi, (tr_s, tr_e, te_s, te_e) in enumerate(windows):
         print(f"\n窗{wi+1}/{len(windows)}: train={tr_s}→{tr_e} test={te_s}→{te_e}")
 
-        # 获取训练段数据
-        train_data = {}
-        for code in symbols:
-            df = get_price(code, start=tr_s, end=tr_e, days=9999)
-            if df is not None and len(df) > 50:
-                train_data[code] = df
-
-        if len(train_data) < 5:
-            print(f"  训练数据不足({len(train_data)}支)，跳过")
-            continue
-
-        # 训练段内调参 (简化: 用基线参数)
-        params = base_params.copy()
-        # TODO: 这里可以实现网格搜索自动调参
-
-        # 获取验证段数据
+        # 验证段数据（含训练段延伸，保证指标 warmup）
         test_data = {}
-        for code in list(train_data.keys()):
-            df = get_price(code, start=tr_s, end=te_e, days=9999)  # 扩展到验证段
+        for code in symbols:
+            df = get_price(code, start=tr_s, end=te_e, days=9999)
             if df is not None and len(df) > 50:
                 test_data[code] = df
 
         if len(test_data) < 5:
-            print(f"  验证数据不足，跳过")
+            print(f"  验证数据不足({len(test_data)}支)，跳过")
             continue
 
-        # 跑验证段回测
+        # [P0-B] 大盘指数数据（验证段）
+        index_df = None
+        if index_symbol:
+            index_df = get_price(index_symbol, start=tr_s, end=te_e, days=9999)
+
+        # 参数：固定基线（不调参；如需训练段调参，在此实现网格搜索）
+        params = base_params.copy()
+
         engine = BacktestEngine(params=params, trade_cost=0.003)
-        result = engine.run(test_data)
-        s = result.summary()
+        result = engine.run(test_data, index_df=index_df)
+        s_ = result.summary()
 
-        print(f"  样本外: PF={s['profit_factor']} 胜率={s['win_rate']}% "
-              f"交易={s['total_trades']}笔 年化={s['annual_return']}% "
-              f"回撤={s['max_drawdown']}%")
+        print(f"  样本外: PF={s_['profit_factor']} 胜率={s_['win_rate']}% "
+              f"交易={s_['total_trades']}笔 年化={s_['annual_return']}% "
+              f"回撤={s_['max_drawdown']}%")
 
+        window_results.append({
+            "window": wi + 1, "train": f"{tr_s}→{tr_e}", "test": f"{te_s}→{te_e}",
+            **s_,
+        })
         all_oos_trades.extend(result.trades)
 
     # 汇总样本外
@@ -114,7 +111,7 @@ def walk_forward(
     tl = abs(sum(t.pnl_pct for t in losses))
     pf = round(tw / tl, 2) if tl > 0 else 0
 
-    # 构建样本外净值
+    # 构建样本外净值（按平仓日 + 持仓日估值简化）
     all_dates = sorted(set(
         t.exit_date for t in all_oos_trades
     ).union(t.entry_date for t in all_oos_trades))
@@ -136,6 +133,7 @@ def walk_forward(
 
     return {
         "windows": len(windows),
+        "window_results": window_results,
         "oos_trades": total_trades,
         "oos_pf": pf,
         "oos_winrate": wr,

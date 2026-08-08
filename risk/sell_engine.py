@@ -1,25 +1,27 @@
 """
-卖出决策引擎 v2.0 — 四层体系 + 评分卡
-v3.0: 回测与实盘共用同一 SellEngine (单一事实来源)
+卖出决策引擎 v2.0 — 四层体系 + 评分卡（回测/实盘共用，单一事实来源）
 
 接口:
   evaluate(pos, bar, regime) -> SellSignal | None
+  evaluate_portfolio(positions, bars, regime) -> list[SellSignal]
 """
 
-from dataclasses import dataclass, field
-from typing import Optional, List
+import json
+from dataclasses import dataclass
 from enum import Enum
+from typing import Optional, List
+from pathlib import Path
 
 
 class ExecTime(Enum):
     NEXT_OPEN = "next_open"    # 次日开盘执行 (硬止损/翻空)
-    NEXT_1450 = "next_1450"    # 次日14:50执行 (评分触发)
+    NEXT_1450 = "next_1450"    # 次日14:50执行 (评分触发/锁利/到期)
 
 
 @dataclass
 class SellSignal:
-    action: str          # "立即卖出" / "建议卖出" / "建议锁利" / "持有观望" / "到期清仓"
-    priority: int        # 1最高(硬止损) 2(翻空) 3(评分) 4(锁利) 5(到期)
+    action: str          # "立即卖出" / "建议卖出" / "建议锁利" / "到期清仓"
+    priority: int        # 1硬止损 2翻空 3评分 4锁利 5到期
     reason: str
     exec_time: ExecTime
     new_stop_loss: float
@@ -84,18 +86,15 @@ class SellConfig:
 
     @classmethod
     def load(cls, path: str = "config/params.json") -> "SellConfig":
-        import json
-        from pathlib import Path
-        if Path(path).exists():
-            with open(path) as f:
-                data = json.load(f).get("sell_config", {})
-            return cls(**data)
+        p = Path(path)
+        if p.exists():
+            with open(p) as f:
+                data = json.load(f)
+            return cls(**data.get("sell_config", {}))
         return cls()
 
 
-# ============ 引擎 ============
-
-_SELL_CONFIG = SellConfig()  # 单例
+_SELL_CONFIG = SellConfig()
 
 
 def set_config(cfg: SellConfig):
@@ -106,21 +105,13 @@ def set_config(cfg: SellConfig):
 def evaluate(pos: Position, bar: Bar, regime: Regime = None) -> Optional[SellSignal]:
     """
     评估单支持仓是否应该卖出
-
-    Args:
-        pos:    持仓信息
-        bar:    当日K线数据
-        regime: 大盘环境
-
-    Returns:
-        SellSignal 或 None (无需操作)
     """
     cfg = _SELL_CONFIG
     regime = regime or Regime()
     profit_pct = (bar.close - pos.entry_price) / pos.entry_price * 100
     triggers = []
 
-    # ---- 硬止损检查（最高优先级） ----
+    # ---- Layer1: 硬止损（最高优先级） ----
     trailing_stop = pos.highest_price - cfg.atr_stop_multiplier * bar.atr
     effective_stop = max(trailing_stop, pos.prev_stop_loss)
 
@@ -131,7 +122,7 @@ def evaluate(pos: Position, bar: Bar, regime: Regime = None) -> Optional[SellSig
             new_stop_loss=round(effective_stop, 2), sell_score=10,
         )
 
-    # ---- Supertrend 翻空 ----
+    # ---- Layer1b: Supertrend 翻空 ----
     if not bar.supertrend_bullish:
         return SellSignal(
             action="立即卖出", priority=2, reason="Supertrend翻空，买入逻辑失效",
