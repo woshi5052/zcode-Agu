@@ -6,6 +6,8 @@
   [P0-B] 接入大盘过滤：set_index_data + can_open_position + get_max_positions
   [P1-2] 净值按日估值（含持仓浮亏），回撤不再被低估
   [P1-3] 止损线基于实际成交价重算
+8/8 新增：
+  [回撤熔断] 接入 risk.drawdown.DrawdownFuse
 """
 
 import numpy as np
@@ -19,6 +21,7 @@ from risk.sell_engine import (
 )
 from execution.broker import Broker, Order, OrderSide
 from execution.cost import CostModel
+from risk.drawdown import DrawdownFuse
 from strategies.indicators import calc_atr, calc_supertrend, calc_ma, calc_rsi
 
 
@@ -117,6 +120,10 @@ class BacktestEngine:
         self.max_positions_hard = self.params.get("top_n", 5)
         # 关键：从 params 加载卖出配置（含 atr_stop_multiplier=3.0）
         set_config(SellConfig.load("config/params.json"))
+        
+        # 回撤熔断
+        self.fuse = DrawdownFuse()
+        self._fuse_enabled = True  # 开关
 
     def run(self, data_dict: dict, names_map: dict = None,
             index_df: pd.DataFrame = None) -> BacktestResult:
@@ -275,7 +282,16 @@ class BacktestEngine:
                     else:
                         pending_sell.append((code, sig.reason, "1450"))
 
-            # ---- 生成新买单（[P0-B] 大盘过滤 + 动态仓位） ----
+            # ---- 生成新买单（[P0-B] 大盘过滤 + 动态仓位 + 回撤熔断） ----
+            # 回撤熔断检查
+            if self._fuse_enabled:
+                from risk.drawdown import FuseState
+                fuse_state = self.fuse.check()
+                if fuse_state in (FuseState.SHUTDOWN, FuseState.FLATTEN):
+                    continue  # 跳过开仓
+                elif fuse_state == FuseState.REDUCE_HALF:
+                    self.engine._max_positions = min(self.engine.get_max_positions(), 1)
+            
             if self.engine.can_open_position():
                 max_slots = self.engine.get_max_positions()
                 slots = max(0, max_slots - len(positions))
@@ -303,6 +319,11 @@ class BacktestEngine:
                 else:
                     total_value += pos["shares"] * pos["entry_price"]
             equity.loc[date] = total_value / INITIAL_CAPITAL
+
+            # 回撤熔断每日更新
+            if self._fuse_enabled:
+                self.fuse.update(total_value)
+                self.fuse.cooldown_days = max(0, self.fuse.cooldown_days - 1) if self.fuse.cooldown_days > 0 else 0
 
         # ---- 强制清仓 ----
         last_date = all_dates[-1]
