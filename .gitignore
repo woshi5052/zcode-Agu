@@ -7,6 +7,9 @@ build/
 
 # Data cache (large files, regenerated daily)
 data/cache/*.csv
+data/cb_cache/*.csv
+data/fundamental_cache/*.csv
+data/cb_fetch_failed.csv
 
 # Reports (generated daily)
 reports/*.json

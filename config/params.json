@@ -7,7 +7,7 @@
   "rsi_period": 14,
   "rsi_threshold": 40,
   "rsi_upper": 65,
-  "volume_ratio": 1.2,
+  "volume_ratio": 1.5,
   "breakout_days": 20,
   "atr_stop_multiplier": 3.0,
   "trailing_atr_multiplier": 3.0,

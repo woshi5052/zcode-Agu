@@ -60,6 +60,7 @@ def walk_forward(
 
     all_oos_trades = []
     window_results = []
+    oos_equity_fragments = []  # [(start_date, equity_series), ...] 测试段净值片段
 
     for wi, (tr_s, tr_e, te_s, te_e) in enumerate(windows):
         print(f"\n窗{wi+1}/{len(windows)}: train={tr_s}→{tr_e} test={te_s}→{te_e}")
@@ -87,6 +88,11 @@ def walk_forward(
         result = engine.run(test_data, index_df=index_df)
         s_ = result.summary()
 
+        # 截取测试段净值 (OOS only)
+        oos_eq = _extract_oos_equity(result.equity_curve, te_s, te_e)
+        if oos_eq is not None and len(oos_eq) >= 2:
+            oos_equity_fragments.append((te_s, oos_eq))
+
         print(f"  样本外: PF={s_['profit_factor']} 胜率={s_['win_rate']}% "
               f"交易={s_['total_trades']}笔 年化={s_['annual_return']}% "
               f"回撤={s_['max_drawdown']}%")
@@ -111,25 +117,8 @@ def walk_forward(
     tl = abs(sum(t.pnl_pct for t in losses))
     pf = round(tw / tl, 2) if tl > 0 else 0
 
-    # 构建样本外净值（按平仓日 + 持仓日估值简化）
-    all_dates = sorted(set(
-        t.exit_date for t in all_oos_trades
-    ).union(t.entry_date for t in all_oos_trades))
-    equity = pd.Series(1.0, index=pd.to_datetime(all_dates).sort_values())
-    cum = 1.0
-    for date in equity.index.sort_values():
-        day_trades = [t for t in all_oos_trades
-                      if t.exit_date == date.strftime("%Y-%m-%d")]
-        for t in day_trades:
-            cum *= (1 + t.pnl_pct / 100)
-        equity.loc[date] = cum
-    equity = equity.ffill().fillna(1.0)
-
-    days = (equity.index[-1] - equity.index[0]).days
-    annual = round((equity.iloc[-1] ** (365 / days) - 1) * 100, 2) if days > 1 else 0
-
-    peak = equity.expanding().max()
-    maxdd = round(((equity - peak) / peak).min() * 100, 2)
+    # ---- 拼接 OOS 净值曲线（每窗独立净值→时间拼接→连续曲线） ----
+    annual, maxdd = _compute_oos_metrics(oos_equity_fragments)
 
     return {
         "windows": len(windows),
@@ -142,3 +131,57 @@ def walk_forward(
         "oos_avg_win": round(sum(t.pnl_pct for t in wins) / len(wins), 2) if wins else 0,
         "oos_avg_loss": round(sum(t.pnl_pct for t in losses) / len(losses), 2) if losses else 0,
     }
+
+
+def _extract_oos_equity(equity_curve: pd.Series, test_start: str, test_end: str) -> pd.Series:
+    """从回测净值曲线中截取测试段（OOS）"""
+    if equity_curve is None or equity_curve.empty:
+        return None
+    mask = (equity_curve.index >= test_start) & (equity_curve.index <= test_end)
+    oos = equity_curve[mask]
+    if len(oos) < 2:
+        return None
+    # 归一化到测试段起点=1.0
+    return oos / oos.iloc[0]
+
+
+def _compute_oos_metrics(fragments: list) -> tuple:
+    """
+    拼接各窗 OOS 净值片段，计算年化收益率和最大回撤。
+    
+    拼接规则：每窗净值从上一窗终值接续（资本不重置）。
+    """
+    if not fragments:
+        return 0.0, 0.0
+
+    # 按时间排序
+    fragments.sort(key=lambda x: x[0])
+
+    # 拼接：上一窗终值 × 当前窗归一化净值
+    combined = None
+    carry = 1.0  # 累积净值乘数
+
+    for _, eq in fragments:
+        scaled = eq * carry
+        if combined is None:
+            combined = scaled
+        else:
+            combined = pd.concat([combined, scaled[scaled.index > combined.index[-1]]])
+        carry = scaled.iloc[-1]
+
+    if combined is None or len(combined) < 2:
+        return 0.0, 0.0
+
+    # 年化收益率
+    days = (combined.index[-1] - combined.index[0]).days
+    if days > 1:
+        annual = round((combined.iloc[-1] ** (365.0 / days) - 1) * 100, 2)
+    else:
+        annual = 0.0
+
+    # 最大回撤
+    peak = combined.expanding().max()
+    dd = ((combined - peak) / peak).min()
+    maxdd = round(dd * 100, 2)
+
+    return annual, maxdd

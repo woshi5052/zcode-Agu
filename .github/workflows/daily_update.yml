@@ -94,3 +94,16 @@ jobs:
           send_to_feishu(results, stats)
           print('推送完成')
           "
+
+      - name: Run Paper Trading
+        run: |
+          python paper_trade.py
+          echo "模拟盘完成"
+
+      - name: Commit Paper State
+        run: |
+          git config user.name "quant-bot"
+          git config user.email "bot@ashare-quant.dev"
+          git add position/paper_state.json position/paper_log.csv
+          git diff --cached --quiet || git commit -m "📊 模拟盘 $(date +%Y-%m-%d)"
+          git push

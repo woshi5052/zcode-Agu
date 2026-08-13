@@ -125,9 +125,14 @@ class BacktestEngine:
         self.fuse = DrawdownFuse()
         self._fuse_enabled = True  # 开关
 
+        # 基本面过滤 (PIT三关) — 开关
+        self.use_fundamental = self.params.get("use_fundamental", False)
+        self.fund_rejects = []  # 记录被过滤的信号 (code, date, reason)
+
     def run(self, data_dict: dict, names_map: dict = None,
             index_df: pd.DataFrame = None) -> BacktestResult:
         if names_map is None: names_map = {}
+        self.fund_rejects = []  # 重置过滤记录
         # [P0-B] 大盘过滤：接入指数数据（完整传入，run 内逐日切片更新 regime）
         self._index_df_full = index_df
 
@@ -172,8 +177,10 @@ class BacktestEngine:
                     df = data_dict[code]
                     bar = df.loc[date]
                     prev_close = float(df["close"].iloc[df.index.get_loc(date) - 1]) if df.index.get_loc(date) > 0 else float(bar["open"])
+                    # [BUGFIX] 卖出必须传实际持仓份额，shares=0 会被 Broker 拒单
+                    sell_shares = positions[code]["shares"]
                     fill = self.broker.try_fill(
-                        Order(code, OrderSide.SELL, 0),
+                        Order(code, OrderSide.SELL, sell_shares),
                         float(bar["open"]), float(bar["high"]),
                         float(bar["low"]), float(bar["close"]), prev_close,
                         float(bar["volume"]))
@@ -306,6 +313,16 @@ class BacktestEngine:
                             df.iloc[:idx+1].copy(), code=code,
                             name=names_map.get(code, code))
                         if result:
+                            # [基本面过滤] PIT三关 (可选开关)
+                            if self.use_fundamental:
+                                from data.fundamental import pit_check
+                                price = float(result.get("entry_price",
+                                                float(df["close"].loc[date])))
+                                ok, reason = pit_check(code, date, price)
+                                if not ok:
+                                    self.fund_rejects.append(
+                                        (code, date.strftime("%Y-%m-%d"), reason))
+                                    continue
                             cands.append((code, result))
                     cands.sort(key=lambda x: x[1]["score"], reverse=True)
                     for code, result in cands[:slots]:

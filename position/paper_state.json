@@ -1,0 +1,16 @@
+{
+  "cash": 10000.0,
+  "positions": {},
+  "cooldown": {},
+  "pending_orders": [
+    [
+      "000630",
+      "BUY",
+      100,
+      6.96,
+      "信号入场"
+    ]
+  ],
+  "trades": [],
+  "last_run": "2026-08-08"
+}

@@ -134,6 +134,29 @@ def run_live(stock_count: int = 50):
         top_n=params.get("top_n", 5), params=params,
     )
 
+    # 基本面三关过滤 (通达信数据: 风险/估值/筹码)
+    step("Step 3.5: 基本面过滤")
+    if results:
+        try:
+            from strategies.fundamental_filter import FundamentalFilter
+            ff = FundamentalFilter()
+            before = len(results)
+            kept = []
+            for r in results:
+                price = float(r.get("entry_price", 0) or r.get("current_price", 0))
+                if price <= 0:
+                    kept.append(r)  # 无价格信息不拦
+                    continue
+                check = ff.check(r["code"], price)
+                if check.passed:
+                    kept.append(r)
+                else:
+                    print(f"  ❌ 过滤 {r['name']}({r['code']}): {check.reject_reason}")
+            results = kept
+            print(f"  基本面过滤: {before}→{len(results)} 支")
+        except Exception as e:
+            print(f"  [WARN] 基本面过滤不可用: {e} (跳过)")
+
     # AI增强
     if AI_ENABLED and results:
         step("Step 4: AI增强")
