@@ -83,9 +83,10 @@ class FundamentalFilter:
         """执行三关过滤"""
         fin = self._get_finance(code)
         if fin is None:
+            # [修复] 数据缺失 → 放行, 不让连通性问题误杀全部推荐
             return FundamentalResult(
-                code=code, passed=False, gates={},
-                metrics={}, reject_reason="财务数据缺失")
+                code=code, passed=True, gates={},
+                metrics={}, reject_reason="数据缺失(放行)")
 
         gates = {}
         metrics = {}

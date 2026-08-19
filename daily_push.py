@@ -43,10 +43,14 @@ def fetch_data(codes: list, max_stocks: int = 300) -> dict:
 
 
 def fundamental_filter(results: list) -> list:
-    """基本面三关过滤 (通达信实时数据, 失败时放行)"""
+    """
+    基本面三关过滤 (AKShare PIT版 — 与回测验证配置一致, Actions可用)
+    失败/缺失时放行, 不让连通性问题误杀推荐
+    """
     try:
-        from strategies.fundamental_filter import FundamentalFilter
-        ff = FundamentalFilter()
+        from data.fundamental import pit_check
+        import pandas as pd
+        as_of = pd.Timestamp.now().normalize()
         kept = []
         for r in results:
             price = float(r.get("entry_price", 0) or r.get("current_price", 0))
@@ -54,14 +58,15 @@ def fundamental_filter(results: list) -> list:
                 kept.append(r)
                 continue
             try:
-                check = ff.check(r["code"], price)
-            except Exception:
-                kept.append(r)  # 单只失败放行
+                ok, reason = pit_check(r["code"], as_of, price)
+            except Exception as e:
+                print(f"  ⚠️ {r['name']}({r['code']}) 检查异常({str(e)[:40]}): 放行")
+                kept.append(r)
                 continue
-            if check.passed:
+            if ok:
                 kept.append(r)
             else:
-                print(f"  ❌ 过滤 {r['name']}({r['code']}): {check.reject_reason}")
+                print(f"  ❌ 过滤 {r['name']}({r['code']}): {reason}")
         print(f"  基本面过滤: {len(results)}→{len(kept)} 支")
         return kept
     except Exception as e:
