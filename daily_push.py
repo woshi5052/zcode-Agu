@@ -18,8 +18,14 @@ from tracker.predictor import add_predictions, check_predictions, save_recommend
 
 
 def fetch_data(codes: list, max_stocks: int = 300) -> dict:
-    """拉取全量K线 (AKShare东财)"""
-    print(f"拉取 {len(codes)} 支...")
+    """拉取全量K线 (AKShare东财)
+    收盘前(15:30前)运行时, 剔除当日未完成K线, 只用完整交易日数据
+    """
+    import datetime
+    now = datetime.datetime.now()
+    is_intraday = now.hour < 15 or (now.hour == 15 and now.minute < 30)
+
+    print(f"拉取 {len(codes)} 支... ({\"盘中-剔除当日K线\" if is_intraday else \"收盘后-含当日\"})")
     data = {}
     for i, code in enumerate(codes):
         try:
@@ -33,7 +39,11 @@ def fetch_data(codes: list, max_stocks: int = 300) -> dict:
                     df["amount"] = df["close"] * df["volume"]
                 df["date"] = pd.to_datetime(df["date"])
                 df = df.set_index("date").sort_index()
-                data[code] = df
+                # [修复] 盘中运行时剔除当日未完成K线
+                if is_intraday and len(df) > 0 and df.index[-1].date() == now.date():
+                    df = df.iloc[:-1]
+                if len(df) > 50:
+                    data[code] = df
         except Exception:
             pass
         if (i + 1) % 50 == 0:
