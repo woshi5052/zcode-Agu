@@ -37,8 +37,8 @@ def fetch_data(codes: list, max_stocks: int = 300) -> dict:
         except Exception:
             pass
         if (i + 1) % 50 == 0:
-            print(f"  {i+1}/{len(codes)}")
-        time.sleep(0.15)
+            print(f"  {i+1}/{len(codes)}", flush=True)
+        time.sleep(0.05)
     return data
 
 
