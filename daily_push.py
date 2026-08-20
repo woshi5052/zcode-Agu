@@ -81,13 +81,6 @@ def fundamental_filter(results: list) -> list:
                 rejects.append(f"{r['name']}({r['code']}): {reason}")
                 print(f"  ❌ 过滤 {r['name']}({r['code']}): {reason}")
 
-        # [兜底] 全部被拦时, 放行评分最高的一支并标注风险, 避免天天推空
-        if len(kept) == 0 and results:
-            best = results[0]
-            best["_fund_warning"] = rejects[0] if rejects else "全部被拦(兜底放行)"
-            kept = [best]
-            print(f"  ⚠️ 全部被拦, 兜底放行最高分: {best['name']}")
-
         print(f"  基本面过滤: {len(results)}→{len(kept)} 支")
         return kept, rejects
     except Exception as e:
