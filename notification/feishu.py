@@ -53,7 +53,8 @@ def _get_tenant_token() -> str | None:
 # 消息构建
 # ============================================
 
-def build_message(recommendations: list[dict], stats: dict = None) -> str:
+def build_message(recommendations: list[dict], stats: dict = None,
+                  diag: dict = None) -> str:
     """构建飞书文本消息"""
 
     lines = [
@@ -84,6 +85,15 @@ def build_message(recommendations: list[dict], stats: dict = None) -> str:
             )
     else:
         lines.append("\n  📭 今日无符合条件的推荐")
+
+    # 诊断信息 (排查空推荐用)
+    if diag:
+        lines.append("")
+        lines.append(f"🔍 诊断: 数据{diag.get('数据支数','?')}支 | "
+                     f"池子{diag.get('池子过滤后','?')}支 | "
+                     f"候选{diag.get('策略候选','?')}支 → 最终{diag.get('最终推荐','?')}支")
+        for rej in (diag.get("基本面拦截") or [])[:5]:
+            lines.append(f"  🚫 {rej}")
 
     lines.append("━━━━━━━━━━━━━━━━━━━")
 
@@ -171,7 +181,8 @@ def _send_via_bot_api(text: str) -> bool:
 # 统一发送入口
 # ============================================
 
-def send_to_feishu(recommendations: list[dict], stats: dict = None) -> bool:
+def send_to_feishu(recommendations: list[dict], stats: dict = None,
+                   diag: dict = None) -> bool:
     """
     发送消息到飞书
     优先级: Bot API > Webhook
@@ -180,7 +191,7 @@ def send_to_feishu(recommendations: list[dict], stats: dict = None) -> bool:
         print("[INFO] 飞书推送未启用")
         return False
 
-    text = build_message(recommendations, stats)
+    text = build_message(recommendations, stats, diag=diag)
 
     # 优先 Bot API
     if FEISHU_APP_ID and FEISHU_APP_SECRET:

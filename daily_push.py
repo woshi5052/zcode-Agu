@@ -63,6 +63,7 @@ def fundamental_filter(results: list) -> list:
         import pandas as pd
         as_of = pd.Timestamp.now().normalize()
         kept = []
+        rejects = []
         for r in results:
             price = float(r.get("entry_price", 0) or r.get("current_price", 0))
             if price <= 0:
@@ -77,12 +78,13 @@ def fundamental_filter(results: list) -> list:
             if ok:
                 kept.append(r)
             else:
+                rejects.append(f"{r['name']}({r['code']}): {reason}")
                 print(f"  ❌ 过滤 {r['name']}({r['code']}): {reason}")
         print(f"  基本面过滤: {len(results)}→{len(kept)} 支")
-        return kept
+        return kept, rejects
     except Exception as e:
         print(f"  [WARN] 基本面过滤不可用: {e} (跳过)")
-        return results
+        return results, []
 
 
 def main():
@@ -108,10 +110,11 @@ def main():
     filtered = stock_pool_filter(data, names_map=names)
     results = run_trend_analysis(filtered, names_map=names,
                                  top_n=params.get("top_n", 5), params=params)
-    print(f"策略候选: {len(results)} 支")
+    cand_count = len(results)
+    print(f"策略候选: {cand_count} 支")
 
     # 3. 基本面三关过滤 [新]
-    results = fundamental_filter(results)
+    results, fund_rejects = fundamental_filter(results)
 
     # 4. AI 增强
     if results:
@@ -123,7 +126,16 @@ def main():
     save_recommendations(results)
     add_predictions(results)
     stats = check_predictions(data)
-    send_to_feishu(results, stats)
+
+    # 诊断信息 (附带进消息, 便于排查空推荐)
+    diag = {
+        "数据支数": len(data),
+        "池子过滤后": len(filtered),
+        "策略候选": cand_count,
+        "基本面拦截": fund_rejects,
+        "最终推荐": len(results),
+    }
+    send_to_feishu(results, stats, diag=diag)
     print("推送完成")
 
 
