@@ -121,7 +121,7 @@ def get_pit_snapshot(code: str, as_of: pd.Timestamp) -> dict | None:
 
 
 def pit_check(code: str, as_of: pd.Timestamp, price: float,
-              max_debt=70, min_current=0.8, max_pe=80, max_pb=8) -> tuple[bool, str]:
+              max_debt=75, min_current=0.8, max_pe=100, max_pb=8) -> tuple[bool, str]:
     """
     PIT 时点三关过滤 (与 fundamental_filter.py 同阈值)
     Returns: (passed, reason)
