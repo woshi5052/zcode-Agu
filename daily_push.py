@@ -25,7 +25,8 @@ def fetch_data(codes: list, max_stocks: int = 300) -> dict:
     now = datetime.datetime.now()
     is_intraday = now.hour < 15 or (now.hour == 15 and now.minute < 30)
 
-    print(f"拉取 {len(codes)} 支... ({\"盘中-剔除当日K线\" if is_intraday else \"收盘后-含当日\"})")
+    mode = "盘中-剔除当日K线" if is_intraday else "收盘后-含当日"
+    print(f"拉取 {len(codes)} 支... ({mode})")
     data = {}
     for i, code in enumerate(codes):
         try:
