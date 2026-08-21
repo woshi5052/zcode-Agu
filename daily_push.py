@@ -19,14 +19,16 @@ from tracker.predictor import add_predictions, check_predictions, save_recommend
 
 def fetch_data(codes: list, max_stocks: int = 300) -> dict:
     """拉取全量K线 (AKShare东财)
-    收盘前(15:30前)运行时, 剔除当日未完成K线, 只用完整交易日数据
+    用北京时间判断: 15:30前运行时剔除当日未完成K线, 只用完整交易日数据
+    (Actions服务器是UTC时区, 不能直接用服务器时间)
     """
     import datetime
-    now = datetime.datetime.now()
-    is_intraday = now.hour < 15 or (now.hour == 15 and now.minute < 30)
+    # 北京时间 = UTC+8 (Actions服务器时间转北京)
+    bjt_now = datetime.datetime.utcnow() + datetime.timedelta(hours=8)
+    is_intraday = bjt_now.hour < 15 or (bjt_now.hour == 15 and bjt_now.minute < 30)
 
     mode = "盘中-剔除当日K线" if is_intraday else "收盘后-含当日"
-    print(f"拉取 {len(codes)} 支... ({mode})")
+    print(f"拉取 {len(codes)} 支... ({mode}, 北京{bjt_now:%H:%M})")
     data = {}
     for i, code in enumerate(codes):
         try:
@@ -40,8 +42,9 @@ def fetch_data(codes: list, max_stocks: int = 300) -> dict:
                     df["amount"] = df["close"] * df["volume"]
                 df["date"] = pd.to_datetime(df["date"])
                 df = df.set_index("date").sort_index()
-                # [修复] 盘中运行时剔除当日未完成K线
-                if is_intraday and len(df) > 0 and df.index[-1].date() == now.date():
+                # [修复] 盘中运行(北京时间)时剔除当日未完成K线
+                if (is_intraday and len(df) > 0
+                        and df.index[-1].date() == bjt_now.date()):
                     df = df.iloc[:-1]
                 if len(df) > 50:
                     data[code] = df
@@ -61,7 +64,9 @@ def fundamental_filter(results: list) -> list:
     try:
         from data.fundamental import pit_check
         import pandas as pd
-        as_of = pd.Timestamp.now().normalize()
+        import datetime
+        # 北京时间 (Actions是UTC)
+        as_of = (pd.Timestamp.utcnow() + pd.Timedelta(hours=8)).normalize()
         kept = []
         rejects = []
         for r in results:
