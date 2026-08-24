@@ -89,6 +89,9 @@ def build_message(recommendations: list[dict], stats: dict = None,
     # 诊断信息 (排查空推荐用)
     if diag:
         lines.append("")
+        market = diag.get("大盘状态", "?")
+        if market == "弱势空仓":
+            lines.append("🌧️ 大盘弱势(合成指数跌破MA20) → 今日空仓, 不推票")
         lines.append(f"🔍 诊断: 数据{diag.get('数据支数','?')}支 | "
                      f"池子{diag.get('池子过滤后','?')}支 | "
                      f"候选{diag.get('策略候选','?')}支 → 最终{diag.get('最终推荐','?')}支")

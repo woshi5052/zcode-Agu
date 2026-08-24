@@ -93,6 +93,26 @@ def fundamental_filter(results: list) -> list:
         return results, []
 
 
+def check_market_regime(data: dict) -> bool:
+    """大盘 regime 检查 (合成指数等权 → 是否跌破MA20)
+    Returns: True=弱势(应空仓), False=正常
+    """
+    if len(data) < 10:
+        return False
+    closes = [df["close"] for df in data.values()]
+    all_dates = sorted(set().union(*[c.index for c in closes]))
+    synth = pd.DataFrame(index=all_dates)
+    synth["close"] = sum(c.reindex(all_dates).ffill().fillna(0) for c in closes) / len(closes)
+    ma20 = synth["close"].rolling(20).mean()
+    if len(ma20.dropna()) < 1:
+        return False
+    last = synth["close"].iloc[-1]
+    ma = ma20.iloc[-1]
+    pct = (last / ma - 1) * 100
+    print(f"  大盘: 合成指数{last:.2f} vs MA20({ma:.2f}) = {pct:+.1f}%")
+    return last < ma
+
+
 def main():
     with open("config/params.json") as f:
         params = json.load(f)
@@ -112,23 +132,30 @@ def main():
         print("数据不足，跳过")
         return
 
-    # 2. 过滤 + 策略
+    # 2. 大盘 regime 检查 (合成指数等权, 回测同款方法)
+    market_weak = check_market_regime(data)
+
+    # 3. 过滤 + 策略 (大盘弱势 → 空仓不推票)
     filtered = stock_pool_filter(data, names_map=names)
-    results = run_trend_analysis(filtered, names_map=names,
-                                 top_n=params.get("top_n", 5), params=params)
+    if market_weak:
+        results = []
+        print("  大盘弱势(合成指数跌破MA20): 今日空仓")
+    else:
+        results = run_trend_analysis(filtered, names_map=names,
+                                     top_n=params.get("top_n", 5), params=params)
     cand_count = len(results)
     print(f"策略候选: {cand_count} 支")
 
-    # 3. 基本面三关过滤 [新]
+    # 4. 基本面三关过滤 [新]
     results, fund_rejects = fundamental_filter(results)
 
-    # 4. AI 增强
+    # 5. AI 增强
     if results:
         results = enhance_with_sentiment(results)
         for r in results:
             print(f"  ✅ {r['name']} ¥{r['entry_price']} 评分{r.get('score','')}")
 
-    # 5. 保存 + 推送
+    # 6. 保存 + 推送
     save_recommendations(results)
     add_predictions(results)
     stats = check_predictions(data)
@@ -140,6 +167,7 @@ def main():
         "策略候选": cand_count,
         "基本面拦截": fund_rejects,
         "最终推荐": len(results),
+        "大盘状态": "弱势空仓" if market_weak else "正常",
     }
     send_to_feishu(results, stats, diag=diag)
     print("推送完成")
