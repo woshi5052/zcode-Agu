@@ -35,6 +35,9 @@ class TrendEngine:
         self.volume_ratio = p.get("volume_ratio", 1.2)
         self.breakout_days = p.get("breakout_days", 20)
 
+        # [实验] 回踩买点开关 (默认关, 验证后再启用)
+        self.enable_pullback = p.get("enable_pullback", False)
+
         # 统一止损 (v3.0: 3.0)
         self.atr_stop_mult = p.get("atr_stop_multiplier", 3.0)
         self.trailing_atr_mult = p.get("trailing_atr_multiplier", 3.0)
@@ -100,7 +103,8 @@ class TrendEngine:
     # 过滤条件
     # ================================================
 
-    def check_trend_filter(self, df: pd.DataFrame, idx: int = -1) -> dict:
+    def check_trend_filter(self, df: pd.DataFrame, idx: int = -1,
+                           require_volume: bool = True) -> dict:
         min_bars = max(self.ma_long, self.atr_period) + 5
         if df is None or len(df) < min_bars:
             return {"pass": False, "reason": "数据不足"}
@@ -127,12 +131,13 @@ class TrendEngine:
         if rsi_val <= self.rsi_threshold:
             reasons.append(f"RSI过低({rsi_val:.1f})")
 
-        # 4. 量能
-        vol_ma20 = volume.rolling(20).mean()
-        if vol_ma20.iloc[idx] > 0:
-            vr = volume.iloc[idx] / vol_ma20.iloc[idx]
-            if vr < self.volume_ratio:
-                reasons.append(f"量能不足({vr:.2f})")
+        # 4. 量能 (回踩信号豁免: 健康回踩本就缩量)
+        if require_volume:
+            vol_ma20 = volume.rolling(20).mean()
+            if vol_ma20.iloc[idx] > 0:
+                vr = volume.iloc[idx] / vol_ma20.iloc[idx]
+                if vr < self.volume_ratio:
+                    reasons.append(f"量能不足({vr:.2f})")
 
         if reasons:
             return {"pass": False, "reason": " | ".join(reasons)}
@@ -163,6 +168,22 @@ class TrendEngine:
         rsi = calc_rsi(close, self.rsi_period)
         if macd_line.iloc[idx] > signal_line.iloc[idx] and rsi.iloc[idx] > 50:
             signals.append("MACD金叉+RSI>50")
+
+        # [实验] 回踩买点: 趋势多头 + 回踩MA20支撑企稳
+        if self.enable_pullback and len(df) > 10:
+            low = df["low"]
+            st = calc_supertrend(high, low, close,
+                                 self.atr_period, self.st_multiplier)
+            ma20 = calc_ma(close, self.ma_short)
+            # 1. 趋势仍在: Supertrend多头 且 收盘站上MA20
+            if (st["direction"].iloc[idx] == 1
+                    and close.iloc[idx] > ma20.iloc[idx]):
+                # 2. 近5日曾回踩到MA20附近 (≤1.5%偏离)
+                recent_low = low.iloc[idx-4:idx].min()
+                if recent_low <= ma20.iloc[idx] * 1.015:
+                    # 3. 当日企稳: 收阳且收复MA20
+                    if close.iloc[idx] > close.iloc[idx-1]:
+                        signals.append("回踩MA20企稳")
 
         return signals
 
@@ -258,7 +279,19 @@ class TrendEngine:
 
         trend_check = self.check_trend_filter(df, idx)
         if not trend_check["pass"]:
-            return None
+            # 回踩信号豁免量能: 重试不带量能要求, 但只放行回踩信号
+            if self.enable_pullback and "量能不足" in trend_check["reason"]:
+                trend_check2 = self.check_trend_filter(df, idx, require_volume=False)
+                if trend_check2["pass"]:
+                    signals_tmp = self.detect_entry_signals(df, idx)
+                    if any("回踩" in s for s in signals_tmp):
+                        trend_check = trend_check2  # 放行回踩
+                    else:
+                        return None
+                else:
+                    return None
+            else:
+                return None
 
         signals = self.detect_entry_signals(df, idx)
         if not signals:
