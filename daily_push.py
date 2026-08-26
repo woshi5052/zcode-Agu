@@ -106,9 +106,23 @@ def fundamental_filter(results: list) -> list:
 
 
 def check_market_regime(data: dict) -> bool:
-    """大盘 regime 检查 (合成指数等权 → 是否跌破MA20)
+    """大盘 regime 检查 (真实沪深300指数 vs MA20, 回测同款逻辑)
     Returns: True=弱势(应空仓), False=正常
+    优先真实指数(1次请求不受个股限流影响), 失败才退回合成指数
     """
+    try:
+        idx = ak.stock_zh_index_daily(symbol="sh000300")
+        if idx is not None and len(idx) > 25:
+            idx["ma20"] = idx["close"].rolling(20).mean()
+            last = idx.iloc[-1]
+            pct = (last["close"] / last["ma20"] - 1) * 100
+            print(f"  大盘(沪深300): {last['close']:.0f} vs MA20({last['ma20']:.0f}) "
+                  f"= {pct:+.1f}% [{last['date']}]")
+            return float(last["close"]) < float(last["ma20"])
+    except Exception as e:
+        print(f"  [WARN] 真实指数获取失败: {str(e)[:60]}, 退回合成指数")
+
+    # 兜底: 合成指数等权
     if len(data) < 10:
         return False
     closes = [df["close"] for df in data.values()]
@@ -121,7 +135,7 @@ def check_market_regime(data: dict) -> bool:
     last = synth["close"].iloc[-1]
     ma = ma20.iloc[-1]
     pct = (last / ma - 1) * 100
-    print(f"  大盘: 合成指数{last:.2f} vs MA20({ma:.2f}) = {pct:+.1f}%")
+    print(f"  大盘(合成): {last:.2f} vs MA20({ma:.2f}) = {pct:+.1f}%")
     return last < ma
 
 
