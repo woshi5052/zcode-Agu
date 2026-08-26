@@ -56,10 +56,12 @@ def _get_tenant_token() -> str | None:
 def build_message(recommendations: list[dict], stats: dict = None,
                   diag: dict = None) -> str:
     """构建飞书文本消息"""
+    import datetime
+    bjt = datetime.datetime.utcnow() + datetime.timedelta(hours=8)
 
     lines = [
         "📊 A股量化日报",
-        f"分析日期: {datetime.now().strftime('%Y-%m-%d %H:%M')} | 数据: AKShare",
+        f"分析日期: {bjt.strftime('%Y-%m-%d %H:%M')} (北京) | 数据: AKShare",
         f"入选: {len(recommendations)}支 | v2.1 趋势+DeepSeek AI",
         "━━━━━━━━━━━━━━━━━━━",
     ]
@@ -92,6 +94,9 @@ def build_message(recommendations: list[dict], stats: dict = None,
         market = diag.get("大盘状态", "?")
         if market == "弱势空仓":
             lines.append("🌧️ 大盘弱势(合成指数跌破MA20) → 今日空仓, 不推票")
+        complete = diag.get("数据完整", "是")
+        if complete != "是":
+            lines.append(f"⚠️ 数据不完整({diag.get('数据支数','?')}支): 拉取限流, 结果仅供参考")
         lines.append(f"🔍 诊断: 数据{diag.get('数据支数','?')}支 | "
                      f"池子{diag.get('池子过滤后','?')}支 | "
                      f"候选{diag.get('策略候选','?')}支 → 最终{diag.get('最终推荐','?')}支")

@@ -30,29 +30,41 @@ def fetch_data(codes: list, max_stocks: int = 300) -> dict:
     mode = "盘中-剔除当日K线" if is_intraday else "收盘后-含当日"
     print(f"拉取 {len(codes)} 支... ({mode}, 北京{bjt_now:%H:%M})")
     data = {}
+    fail_count = 0
     for i, code in enumerate(codes):
-        try:
-            df = ak.stock_zh_a_daily(symbol=_format_code(code), adjust="qfq")
-            if df is not None and len(df) > 50:
-                df = df.rename(columns={
-                    "date": "date", "open": "open", "high": "high",
-                    "low": "low", "close": "close", "volume": "volume",
-                })
-                if "amount" not in df.columns:
-                    df["amount"] = df["close"] * df["volume"]
-                df["date"] = pd.to_datetime(df["date"])
-                df = df.set_index("date").sort_index()
-                # [修复] 盘中运行(北京时间)时剔除当日未完成K线
-                if (is_intraday and len(df) > 0
-                        and df.index[-1].date() == bjt_now.date()):
-                    df = df.iloc[:-1]
-                if len(df) > 50:
-                    data[code] = df
-        except Exception:
-            pass
+        df = None
+        # 重试2次 (AKShare偶发限流)
+        for attempt in range(2):
+            try:
+                df = ak.stock_zh_a_daily(symbol=_format_code(code), adjust="qfq")
+                if df is not None and len(df) > 50:
+                    break
+            except Exception:
+                df = None
+                time.sleep(0.5)
+        if df is None or len(df) <= 50:
+            fail_count += 1
+        else:
+            df = df.rename(columns={
+                "date": "date", "open": "open", "high": "high",
+                "low": "low", "close": "close", "volume": "volume",
+            })
+            if "amount" not in df.columns:
+                df["amount"] = df["close"] * df["volume"]
+            df["date"] = pd.to_datetime(df["date"])
+            df = df.set_index("date").sort_index()
+            # [修复] 盘中运行(北京时间)时剔除当日未完成K线
+            if (is_intraday and len(df) > 0
+                    and df.index[-1].date() == bjt_now.date()):
+                df = df.iloc[:-1]
+            if len(df) > 50:
+                data[code] = df
+            else:
+                fail_count += 1
         if (i + 1) % 50 == 0:
-            print(f"  {i+1}/{len(codes)}", flush=True)
+            print(f"  {i+1}/{len(codes)} 失败{fail_count}", flush=True)
         time.sleep(0.05)
+    print(f"拉取完成: 成功{len(data)} 失败{fail_count}")
     return data
 
 
@@ -132,6 +144,9 @@ def main():
         print("数据不足，跳过")
         return
 
+    # 数据完整性: <200支说明拉取被限流, 样本有偏, 结果仅供参考
+    data_incomplete = len(data) < 200
+
     # 2. 大盘 regime 检查 (合成指数等权, 回测同款方法)
     market_weak = check_market_regime(data)
 
@@ -168,6 +183,7 @@ def main():
         "基本面拦截": fund_rejects,
         "最终推荐": len(results),
         "大盘状态": "弱势空仓" if market_weak else "正常",
+        "数据完整": "否(限流,仅供参考)" if data_incomplete else "是",
     }
     send_to_feishu(results, stats, diag=diag)
     print("推送完成")
