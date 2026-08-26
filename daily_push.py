@@ -144,7 +144,7 @@ def main():
         params = json.load(f)
 
     print(f"\n{'='*50}")
-    print(f"  每日推荐 v2.0 (含基本面过滤)")
+    print(f"  每日推荐 v2.0 (含基本面过滤+大盘过滤)")
     print(f"{'='*50}")
 
     # 1. 数据
