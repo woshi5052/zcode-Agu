@@ -168,7 +168,7 @@ def main():
     filtered = stock_pool_filter(data, names_map=names)
     if market_weak:
         results = []
-        print("  大盘弱势(合成指数跌破MA20): 今日空仓")
+        print("  大盘弱势(沪深300跌破MA20): 今日空仓, 跳过选股分析")
     else:
         results = run_trend_analysis(filtered, names_map=names,
                                      top_n=params.get("top_n", 5), params=params)
@@ -193,7 +193,7 @@ def main():
     diag = {
         "数据支数": len(data),
         "池子过滤后": len(filtered),
-        "策略候选": cand_count,
+        "策略候选": "跳过(空仓)" if market_weak else cand_count,
         "基本面拦截": fund_rejects,
         "最终推荐": len(results),
         "大盘状态": "弱势空仓" if market_weak else "正常",
