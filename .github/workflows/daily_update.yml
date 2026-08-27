@@ -55,6 +55,6 @@ jobs:
         run: |
           git config user.name "quant-bot"
           git config user.email "bot@ashare-quant.dev"
-          git add position/paper_state.json position/paper_log.csv
+          git add position/paper_state.json position/paper_log.csv position/push_log.json
           git diff --cached --quiet || git commit -m "📊 模拟盘 $(date +%Y-%m-%d)"
           git push

@@ -199,7 +199,24 @@ def main():
         "大盘状态": "弱势空仓" if market_weak else "正常",
         "数据完整": "否(限流,仅供参考)" if data_incomplete else "是",
     }
-    send_to_feishu(results, stats, diag=diag)
+    ok = send_to_feishu(results, stats, diag=diag)
+
+    # 推送结果落盘 (供远程排查: workflow 会 commit 此文件)
+    import datetime as _dt
+    push_log = {
+        "time_bjt": (_dt.datetime.utcnow() + _dt.timedelta(hours=8)).strftime("%Y-%m-%d %H:%M:%S"),
+        "feishu_ok": bool(ok),
+        "final_count": len(results),
+        "data_count": len(data),
+        "market_weak": market_weak,
+    }
+    import json as _json
+    with open("position/push_log.json", "w") as f:
+        _json.dump(push_log, f, ensure_ascii=False, indent=2)
+
+    if not ok:
+        print("[ERROR] 飞书推送失败!")
+        sys.exit(1)  # 让 workflow 步骤报红, 不再静默
     print("推送完成")
 
 
