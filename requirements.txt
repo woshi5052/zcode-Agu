@@ -19,6 +19,9 @@ requests>=2.31
 # ModelScope AI (Phase 2)
 modelscope>=1.18
 
+# DeepSeek AI (情绪增强)
+openai>=1.30
+
 # Web Dashboard (Phase 2)
 streamlit>=1.30
 plotly>=5.18

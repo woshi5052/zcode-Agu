@@ -30,6 +30,7 @@ def enhance_with_sentiment(recommendations: list[dict]) -> list[dict]:
 
         label = result.get("label", "neutral")
         reason = result.get("reason", "")
+        rec["ai_source"] = result.get("source", "unknown")  # DeepSeek/disabled/error
 
         if label == "positive":
             rec["score"] = round(rec["score"] * 1.05, 1)

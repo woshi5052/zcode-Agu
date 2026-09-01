@@ -178,9 +178,16 @@ def main():
     # 4. 基本面三关过滤 [新]
     results, fund_rejects = fundamental_filter(results)
 
-    # 5. AI 增强
+    # 5. AI 增强 (记录真实状态)
+    ai_used = False
     if results:
-        results = enhance_with_sentiment(results)
+        from ai.deepseek_client import is_available as _ds_ok
+        if _ds_ok():
+            results = enhance_with_sentiment(results)
+            # 只有真调了DeepSeek才算"在用" (error/disabled不算)
+            ai_used = any(r.get("ai_source") == "DeepSeek" for r in results)
+        else:
+            print("  [INFO] AI情绪未启用 (无DEEPSEEK_API_KEY)")
         for r in results:
             print(f"  ✅ {r['name']} ¥{r['entry_price']} 评分{r.get('score','')}")
 
@@ -209,6 +216,7 @@ def main():
         "final_count": len(results),
         "data_count": len(data),
         "market_weak": market_weak,
+        "ai_used": bool(ai_used),
     }
     import json as _json
     with open("position/push_log.json", "w") as f:
