@@ -10,7 +10,7 @@ import pandas as pd
 import akshare as ak
 
 from data.akshare_fetcher import get_hs300_stocks, _format_code
-from data.universe import get_universe
+from data.universe import get_universe, STOCK_NAMES
 from strategies.filters import stock_pool_filter
 from strategies.scoring import run_trend_analysis
 from ai.sentiment import enhance_with_sentiment
@@ -23,14 +23,24 @@ MAX_AFFORDABLE_PRICE = INITIAL_CAPITAL / 100  # ¥100
 
 
 def get_names_map(codes: list) -> dict:
-    """股票代码→名称映射 (49支池没有现成列表, 从A股全列表里取)"""
-    try:
-        info = ak.stock_info_a_code_name()
-        m = dict(zip(info["code"].astype(str).str.zfill(6), info["name"]))
-        return {c: m.get(c, c) for c in codes}
-    except Exception as e:
-        print(f"  [WARN] 名称列表获取失败: {str(e)[:60]}, 用代码代替")
-        return {c: c for c in codes}
+    """股票代码→名称映射
+    [修复 2026-09-22] 优先用内置静态表 (零网络依赖)——Actions 上
+    stock_info_a_code_name 接口偶发 ConnectionReset, 消息里曾退化为纯代码显示
+    """
+    names = {c: STOCK_NAMES[c] for c in codes if c in STOCK_NAMES}
+    missing = [c for c in codes if c not in names]
+    if missing:
+        print(f"  {len(missing)} 支不在静态名称表, 在线补齐...")
+        try:
+            info = ak.stock_info_a_code_name()
+            m = dict(zip(info["code"].astype(str).str.zfill(6), info["name"]))
+            for c in missing:
+                names[c] = m.get(c, c)
+        except Exception as e:
+            print(f"  [WARN] 名称列表获取失败: {str(e)[:60]}, 未覆盖代码用代码显示")
+            for c in missing:
+                names[c] = c
+    return names
 
 
 def fetch_data(codes: list, max_stocks: int = 300) -> dict:
