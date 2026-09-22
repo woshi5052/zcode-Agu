@@ -1,16 +1,16 @@
 {
-  "cash": 10000.0,
-  "positions": {},
+  "cash": 9394.39985,
+  "positions": {
+    "000725": {
+      "shares": 100,
+      "entry_price": 6.0,
+      "entry_date": "2026-09-22",
+      "stop_loss": 5.88,
+      "highest": 6.0
+    }
+  },
   "cooldown": {},
-  "pending_orders": [
-    [
-      "000725",
-      "BUY",
-      100,
-      6.07,
-      "信号入场"
-    ]
-  ],
+  "pending_orders": [],
   "trades": [],
   "last_run": "2026-09-22"
 }

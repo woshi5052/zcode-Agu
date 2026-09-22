@@ -1,0 +1,28 @@
+{
+  "date": "2026-09-22",
+  "generated_at": "2026-09-22T03:44:49.483836",
+  "count": 1,
+  "recommendations": [
+    {
+      "code": "000725",
+      "name": "000725",
+      "entry_price": 6.07,
+      "stop_loss": 5.95,
+      "stop_pct": 1.98,
+      "target_price": 6.74,
+      "target_pct": 11.04,
+      "holding_days": 20,
+      "score": 72.4,
+      "confidence": "MEDIUM",
+      "signals": [
+        "MACD金叉+RSI>50"
+      ],
+      "current_price": 6.07,
+      "reason": "趋势确认",
+      "regime": "sideways",
+      "max_positions": 1,
+      "ai_source": "DeepSeek",
+      "ai_sentiment": "⚪ 止损近，方向不明"
+    }
+  ]
+}
