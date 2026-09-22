@@ -1,0 +1,23 @@
+{
+  "built": "2026-09-22",
+  "rule": "主板+非ST+2~10元+流动性Top (49支现有+51支新增)",
+  "period": "WF 2022-01-01~2025-06-30, 12M训练/3M测试/3M步进, 9窗",
+  "verdict": "❌ 100支池未过门禁(PF 1.17<1.2), 不上线, 维持49支池",
+  "results": [
+    {
+      "label": "pool49_baseline", "n_symbols": 49,
+      "oos_trades": 86, "oos_pf": 2.91, "oos_winrate": 52.3,
+      "oos_annual": 0.38, "oos_maxdd": -1.8,
+      "gates": {"pf_ge_1.2": true, "dd_le_25": true, "trades_ge_30": true},
+      "note": "2026-09-22 实测运行"
+    },
+    {
+      "label": "pool100_new", "n_symbols": 100,
+      "oos_trades": 425, "oos_pf": 1.17, "oos_winrate": 31.8,
+      "oos_annual": -0.79, "oos_maxdd": -8.38,
+      "gates": {"pf_ge_1.2": false, "dd_le_25": true, "trades_ge_30": true},
+      "window_pfs": [0.78, 0.57, 0.57, 1.15, 1.46, 0.88, 1.33, 2.67, 2.67],
+      "note": "仅2024Q4-2025Q1牛市窗口为正, 2023年三窗PF<0.8"
+    }
+  ]
+}
