@@ -1,6 +1,6 @@
 {
   "date": "2026-09-22",
-  "generated_at": "2026-09-22T04:49:59.398654",
+  "generated_at": "2026-09-22T06:40:35.860796",
   "count": 1,
   "recommendations": [
     {
@@ -22,7 +22,7 @@
       "regime": "sideways",
       "max_positions": 1,
       "ai_source": "DeepSeek",
-      "ai_sentiment": "⚪ 面板周期承压"
+      "ai_sentiment": "⚪ 面板周期底部震荡"
     }
   ]
 }

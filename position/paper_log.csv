@@ -5,3 +5,4 @@
 2026-09-22 03:55:40|BUY_FILL|000725 | shares=100 | fill_price=6.00 | signal_price=6.07 | slippage=-1.10% | fee=5.30 | stop_loss=5.88
 2026-09-22 03:55:40|SNAPSHOT|cash=9394 pos=607 total=10001 pnl=1 positions=1
 2026-09-22 04:51:43|SNAPSHOT|cash=9394 pos=607 total=10001 pnl=1 positions=1
+2026-09-22 06:42:21|SNAPSHOT|cash=9394 pos=607 total=10001 pnl=1 positions=1
