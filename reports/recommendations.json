@@ -1,11 +1,11 @@
 {
   "date": "2026-09-22",
-  "generated_at": "2026-09-22T03:44:49.483836",
+  "generated_at": "2026-09-22T04:49:59.398654",
   "count": 1,
   "recommendations": [
     {
       "code": "000725",
-      "name": "000725",
+      "name": "京东方A",
       "entry_price": 6.07,
       "stop_loss": 5.95,
       "stop_pct": 1.98,
@@ -22,7 +22,7 @@
       "regime": "sideways",
       "max_positions": 1,
       "ai_source": "DeepSeek",
-      "ai_sentiment": "⚪ 止损近，方向不明"
+      "ai_sentiment": "⚪ 面板周期承压"
     }
   ]
 }
