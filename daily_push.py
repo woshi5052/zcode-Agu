@@ -105,38 +105,42 @@ def fundamental_filter(results: list) -> list:
         return results, []
 
 
-def check_market_regime(data: dict) -> bool:
-    """大盘 regime 检查 (真实沪深300指数 vs MA20, 回测同款逻辑)
-    Returns: True=弱势(应空仓), False=正常
-    优先真实指数(1次请求不受个股限流影响), 失败才退回合成指数
+def check_market_regime(data: dict) -> str:
+    """大盘 regime 三态检查 (回测验证过的设计, 与 params.json 阈值一致)
+    Returns: "bull" / "sideways" / "bear"
+      bull:     指数 > MA20×1.02  → 正常推票(最多3支)
+      sideways: MA20×0.98~1.02   → 震荡, 只推1支
+      bear:     指数 < MA20×0.98  → 空仓
+    优先真实沪深300指数, 失败才退回合成指数
     """
     try:
         idx = ak.stock_zh_index_daily(symbol="sh000300")
         if idx is not None and len(idx) > 25:
             idx["ma20"] = idx["close"].rolling(20).mean()
             last = idx.iloc[-1]
-            pct = (last["close"] / last["ma20"] - 1) * 100
+            ratio = float(last["close"]) / float(last["ma20"])
+            pct = (ratio - 1) * 100
+            state = "bull" if ratio > 1.02 else ("bear" if ratio < 0.98 else "sideways")
             print(f"  大盘(沪深300): {last['close']:.0f} vs MA20({last['ma20']:.0f}) "
-                  f"= {pct:+.1f}% [{last['date']}]")
-            return float(last["close"]) < float(last["ma20"])
+                  f"= {pct:+.1f}% [{last['date']}] → {state}")
+            return state
     except Exception as e:
         print(f"  [WARN] 真实指数获取失败: {str(e)[:60]}, 退回合成指数")
 
     # 兜底: 合成指数等权
     if len(data) < 10:
-        return False
+        return "sideways"
     closes = [df["close"] for df in data.values()]
     all_dates = sorted(set().union(*[c.index for c in closes]))
     synth = pd.DataFrame(index=all_dates)
     synth["close"] = sum(c.reindex(all_dates).ffill().fillna(0) for c in closes) / len(closes)
     ma20 = synth["close"].rolling(20).mean()
     if len(ma20.dropna()) < 1:
-        return False
-    last = synth["close"].iloc[-1]
-    ma = ma20.iloc[-1]
-    pct = (last / ma - 1) * 100
-    print(f"  大盘(合成): {last:.2f} vs MA20({ma:.2f}) = {pct:+.1f}%")
-    return last < ma
+        return "sideways"
+    ratio = float(synth["close"].iloc[-1]) / float(ma20.iloc[-1])
+    state = "bull" if ratio > 1.02 else ("bear" if ratio < 0.98 else "sideways")
+    print(f"  大盘(合成): {ratio:+.2f} vs MA20 → {state}")
+    return state
 
 
 def main():
@@ -161,17 +165,24 @@ def main():
     # 数据完整性: <200支说明拉取被限流, 样本有偏, 结果仅供参考
     data_incomplete = len(data) < 200
 
-    # 2. 大盘 regime 检查 (合成指数等权, 回测同款方法)
-    market_weak = check_market_regime(data)
+    # 2. 大盘 regime 三态检查 (回测验证设计: 牛3/震荡1/熊0)
+    regime = check_market_regime(data)
 
-    # 3. 过滤 + 策略 (大盘弱势 → 空仓不推票)
+    # 3. 过滤 + 策略 (按 regime 控制仓位)
     filtered = stock_pool_filter(data, names_map=names)
-    if market_weak:
+    if regime == "bear":
         results = []
-        print("  大盘弱势(沪深300跌破MA20): 今日空仓, 跳过选股分析")
+        print("  大盘bear(沪深300<MA20×0.98): 空仓, 跳过选股")
+    elif regime == "sideways":
+        # 震荡市: 只推评分最高的1支
+        results = run_trend_analysis(filtered, names_map=names,
+                                     top_n=params.get("top_n", 5), params=params)
+        results = results[:1]
+        print("  大盘sideways(±2%区间): 震荡市, 只保留1支")
     else:
         results = run_trend_analysis(filtered, names_map=names,
                                      top_n=params.get("top_n", 5), params=params)
+        print("  大盘bull(>MA20×1.02): 正常推票")
     cand_count = len(results)
     print(f"策略候选: {cand_count} 支")
 
@@ -197,13 +208,14 @@ def main():
     stats = check_predictions(data)
 
     # 诊断信息 (附带进消息, 便于排查空推荐)
+    regime_label = {"bull": "☀️牛(正常推票)", "sideways": "🌤️震荡(推1支)", "bear": "🌧️熊(空仓)"}
     diag = {
         "数据支数": len(data),
         "池子过滤后": len(filtered),
-        "策略候选": "跳过(空仓)" if market_weak else cand_count,
+        "策略候选": "跳过(空仓)" if regime == "bear" else cand_count,
         "基本面拦截": fund_rejects,
         "最终推荐": len(results),
-        "大盘状态": "弱势空仓" if market_weak else "正常",
+        "大盘状态": regime_label.get(regime, regime),
         "数据完整": "否(限流,仅供参考)" if data_incomplete else "是",
     }
     ok = send_to_feishu(results, stats, diag=diag)
@@ -215,7 +227,7 @@ def main():
         "feishu_ok": bool(ok),
         "final_count": len(results),
         "data_count": len(data),
-        "market_weak": market_weak,
+        "regime": regime,
         "ai_used": bool(ai_used),
     }
     import json as _json

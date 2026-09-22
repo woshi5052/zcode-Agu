@@ -92,8 +92,12 @@ def build_message(recommendations: list[dict], stats: dict = None,
     if diag:
         lines.append("")
         market = diag.get("大盘状态", "?")
-        if market == "弱势空仓":
-            lines.append("🌧️ 大盘弱势(沪深300跌破20日线) → 今日空仓, 不推票")
+        if "牛" in market:
+            lines.append("☀️ 大盘bull(沪深300>MA20×1.02) → 正常推票")
+        elif "震荡" in market:
+            lines.append("🌤️ 大盘sideways(±2%区间) → 震荡市, 仅推评分最高1支")
+        elif "熊" in market:
+            lines.append("🌧️ 大盘bear(沪深300<MA20×0.98) → 空仓, 不推票")
         complete = diag.get("数据完整", "是")
         if complete != "是":
             lines.append(f"⚠️ 数据不完整({diag.get('数据支数','?')}支): 拉取限流, 结果仅供参考")
