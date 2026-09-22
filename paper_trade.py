@@ -91,11 +91,33 @@ def run_daily():
     codes = get_universe()[:50]
     names_map = {c: c for c in codes}
 
+    # 数据获取: 本地缓存优先 → 缺失的联网拉取
+    # [修复 2026-09-22] Actions 上 data/cache 被 gitignore, 纯缓存导致每天"数据不足"跳过,
+    # 模拟盘从未真正运行 (挂单卡死6周的根因)
     data_dict = {}
+    missing = []
     for code in codes:
         df = get_price(code, start="2025-01-01", end=today_str)
         if df is not None and len(df) > 50:
-            data_dict[code] = df
+            # 缓存新鲜度: 最后日期距今>5天视为过期 (本地缓存可能停在很久以前)
+            gap = (pd.Timestamp(today_str) - df.index[-1]).days
+            if gap > 5:
+                missing.append(code)
+            else:
+                data_dict[code] = df
+        else:
+            missing.append(code)
+    if missing:
+        print(f"  缓存缺失 {len(missing)} 支, 联网拉取 (AKShare)...")
+        try:
+            from daily_push import fetch_data
+            fetched = fetch_data(missing, max_stocks=len(missing))
+            for code, df in fetched.items():
+                df = df.loc["2025-01-01":]
+                if len(df) > 50:
+                    data_dict[code] = df
+        except Exception as e:
+            print(f"  [ERROR] 联网拉取失败: {str(e)[:80]}")
 
     if len(data_dict) < 5:
         print(f"  数据不足({len(data_dict)}支)，跳过")
@@ -109,15 +131,37 @@ def run_daily():
     # 5. 引擎初始化
     engine = TrendEngine(params)
 
-    # 合成指数
-    closes = [df["close"] for df in data_dict.values()]
-    all_dates = sorted(set().union(*[c.index for c in closes]))
-    synth = pd.DataFrame(index=all_dates)
-    synth["close"] = sum(c.reindex(all_dates).ffill().fillna(0) for c in closes) / len(closes)
-    for col in ["open", "high", "low"]:
-        synth[col] = synth["close"]
-    synth["volume"] = 1
-    engine.set_index_data(synth.loc[:last_date])
+    # 大盘判断: 优先真实沪深300指数 (与 daily_push 口径一致), 失败退回合成等权指数
+    # [修复 2026-09-22] 此前只用合成指数, 与推送端真实指数口径可能分叉
+    idx_data = None
+    try:
+        import akshare as _ak
+        idx_df = _ak.stock_zh_index_daily(symbol="sh000300")
+        idx_df["date"] = pd.to_datetime(idx_df["date"])
+        idx_df = idx_df.set_index("date").sort_index()
+        for _col in ["open", "high", "low", "volume"]:
+            if _col not in idx_df.columns:
+                idx_df[_col] = idx_df["close"]
+        idx_data = idx_df[["open", "high", "low", "close", "volume"]].loc[:last_date]
+        if len(idx_data) < 25:
+            idx_data = None
+        else:
+            last_idx = idx_data["close"].iloc[-1]
+            print(f"  大盘数据: 真实沪深300 ({idx_data.index[-1].date()}, {last_idx:.0f}点)")
+    except Exception as e:
+        print(f"  [WARN] 真实指数获取失败: {str(e)[:60]}, 退回合成指数")
+
+    if idx_data is None:
+        closes = [df["close"] for df in data_dict.values()]
+        all_dates = sorted(set().union(*[c.index for c in closes]))
+        synth = pd.DataFrame(index=all_dates)
+        synth["close"] = sum(c.reindex(all_dates).ffill().fillna(0) for c in closes) / len(closes)
+        for col in ["open", "high", "low"]:
+            synth[col] = synth["close"]
+        synth["volume"] = 1
+        idx_data = synth.loc[:last_date]
+        print("  大盘数据: 合成等权指数 (兜底)")
+    engine.set_index_data(idx_data)
 
     regime_state = engine.get_regime()
     max_pos = engine.get_max_positions()
@@ -134,6 +178,10 @@ def run_daily():
         side = OrderSide.BUY if side_str == "BUY" else OrderSide.SELL
 
         if code not in data_dict or last_date not in data_dict[code].index:
+            # [修复 2026-09-22] 此前静默 continue, 挂单卡死无任何痕迹
+            log_event("ORDER_EXPIRE",
+                      f"{code} {side_str} 数据缺失, 取消挂单(信号价{signal_px:.2f})")
+            print(f"  ⏰ 取消过期挂单: {code} {side_str} (数据缺失, 信号价{signal_px:.2f})")
             continue
         row = data_dict[code].loc[last_date]
         prev_close = float(data_dict[code]["close"].iloc[

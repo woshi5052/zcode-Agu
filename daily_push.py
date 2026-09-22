@@ -10,6 +10,7 @@ import pandas as pd
 import akshare as ak
 
 from data.akshare_fetcher import get_hs300_stocks, _format_code
+from data.universe import get_universe
 from strategies.filters import stock_pool_filter
 from strategies.scoring import run_trend_analysis
 from ai.sentiment import enhance_with_sentiment
@@ -19,6 +20,17 @@ from tracker.predictor import add_predictions, check_predictions, save_recommend
 # 资金约束: 1万本金, A股1手=100股, 最高可买股价
 INITIAL_CAPITAL = 10000.0
 MAX_AFFORDABLE_PRICE = INITIAL_CAPITAL / 100  # ¥100
+
+
+def get_names_map(codes: list) -> dict:
+    """股票代码→名称映射 (49支池没有现成列表, 从A股全列表里取)"""
+    try:
+        info = ak.stock_info_a_code_name()
+        m = dict(zip(info["code"].astype(str).str.zfill(6), info["name"]))
+        return {c: m.get(c, c) for c in codes}
+    except Exception as e:
+        print(f"  [WARN] 名称列表获取失败: {str(e)[:60]}, 用代码代替")
+        return {c: c for c in codes}
 
 
 def fetch_data(codes: list, max_stocks: int = 300) -> dict:
@@ -82,7 +94,9 @@ def fundamental_filter(results: list) -> list:
         import pandas as pd
         import datetime
         # 北京时间 (Actions是UTC)
-        as_of = (pd.Timestamp.utcnow() + pd.Timedelta(hours=8)).normalize()
+        # [修复 2026-09-22] pandas 3.x 的 utcnow() 返回 tz-aware,
+        # 与 naive 的公告日期比较会抛 Invalid comparison, 导致三关过滤全部"异常放行"
+        as_of = (pd.Timestamp.utcnow() + pd.Timedelta(hours=8)).tz_localize(None).normalize()
         kept = []
         rejects = []
         for r in results:
@@ -155,50 +169,48 @@ def main():
     print(f"  每日推荐 v2.0 (含基本面过滤+大盘过滤)")
     print(f"{'='*50}")
 
-    # 1. 数据
-    stocks = get_hs300_stocks()
-    codes = stocks["code"].tolist()
-    names = dict(zip(stocks["code"], stocks["name"]))
+    # 1. 数据 — [修复 2026-09-22] 改用49支低价股池(与回测/模拟盘一致),
+    # 此前扫沪深300导致"推的票从未被模拟盘验证", 两套体系平行脱节
+    codes = get_universe()[:50]
+    names = get_names_map(codes)
     data = fetch_data(codes)
-    print(f"获取: {len(data)} 支")
+    print(f"获取: {len(data)}/{len(codes)} 支 (低价股池)")
 
     if len(data) < 10:
         print("数据不足，跳过")
         return
 
-    # 数据完整性: <200支说明拉取被限流, 样本有偏, 结果仅供参考
-    data_incomplete = len(data) < 200
+    # 数据完整性: 49支池拉到<40支说明被限流, 样本有偏, 结果仅供参考
+    data_incomplete = len(data) < 40
 
     # 2. 大盘 regime 三态检查 (回测验证设计: 牛3/震荡1/熊0)
     regime = check_market_regime(data)
 
-    # 3. 过滤 + 策略 (按 regime 控制仓位)
+    # 3. 过滤 + 策略
+    # [修复 2026-09-22] 顺序改为: 策略出候选 → 资金约束 → 基本面过滤 → 再按regime截取,
+    # 此前震荡市先截top1再过滤, top1买不起当天就空推荐 (09-22上午实际发生)
     filtered = stock_pool_filter(data, names_map=names)
     if regime == "bear":
         results = []
+        fund_rejects = []
         print("  大盘bear(沪深300<MA20×0.98): 空仓, 跳过选股")
-    elif regime == "sideways":
-        # 震荡市: 只推评分最高的1支
-        results = run_trend_analysis(filtered, names_map=names,
-                                     top_n=params.get("top_n", 5), params=params)
-        results = results[:1]
-        print("  大盘sideways(±2%区间): 震荡市, 只保留1支")
     else:
         results = run_trend_analysis(filtered, names_map=names,
                                      top_n=params.get("top_n", 5), params=params)
-        print("  大盘bull(>MA20×1.02): 正常推票")
-    cand_count = len(results)
-    # [资金约束] 1万本金, 1手(100股)成本必须买得起: 股价≤100元
-    if results:
+        # [资金约束] 1万本金, 1手(100股)成本必须买得起: 股价≤100元
         before = len(results)
         results = [r for r in results
                    if float(r.get("entry_price", 0)) <= MAX_AFFORDABLE_PRICE]
         if len(results) < before:
             print(f"  价格过滤(>¥{MAX_AFFORDABLE_PRICE}买不起1手): {before}→{len(results)}")
-    print(f"策略候选: {cand_count} 支")
-
-    # 4. 基本面三关过滤 [新]
-    results, fund_rejects = fundamental_filter(results)
+        # 基本面三关过滤
+        results, fund_rejects = fundamental_filter(results)
+        if regime == "sideways":
+            results = results[:1]
+            print("  大盘sideways(±2%区间): 过滤后取评分最高1支")
+        else:
+            print("  大盘bull(>MA20×1.02): 正常推票")
+    cand_count = len(results)
 
     # 5. AI 增强 (记录真实状态)
     ai_used = False

@@ -1,0 +1,627 @@
+[
+  {
+    "id": "002028_2026-07-28",
+    "date": "2026-07-28",
+    "code": "002028",
+    "name": "思源电气",
+    "entry_price": 168.3,
+    "target_price": 172.09,
+    "stop_loss": 165.78,
+    "rr_ratio": 1.5,
+    "holding_days": 5,
+    "confidence": "MEDIUM",
+    "signals": [
+      "MACD金叉+RSI>50"
+    ],
+    "status": "hit_stop",
+    "pnl_pct": -1.5,
+    "closed_date": "2026-09-22"
+  },
+  {
+    "id": "000001_2026-07-28",
+    "date": "2026-07-28",
+    "code": "000001",
+    "name": "平安银行",
+    "entry_price": 11.11,
+    "target_price": 11.77,
+    "stop_loss": 10.67,
+    "rr_ratio": 1.5,
+    "holding_days": 5,
+    "confidence": "MEDIUM",
+    "signals": [
+      "MACD金叉+RSI>50"
+    ],
+    "status": "expired",
+    "pnl_pct": 5.58,
+    "closed_date": "2026-09-22"
+  },
+  {
+    "id": "000596_2026-07-28",
+    "date": "2026-07-28",
+    "code": "000596",
+    "name": "古井贡酒",
+    "entry_price": 87.75,
+    "target_price": 89.72,
+    "stop_loss": 86.43,
+    "rr_ratio": 1.5,
+    "holding_days": 5,
+    "confidence": "MEDIUM",
+    "signals": [
+      "MACD金叉+RSI>50"
+    ],
+    "status": "expired",
+    "pnl_pct": 8.79,
+    "closed_date": "2026-09-22"
+  },
+  {
+    "id": "002236_2026-07-28",
+    "date": "2026-07-28",
+    "code": "002236",
+    "name": "大华股份",
+    "entry_price": 16.73,
+    "target_price": 17.11,
+    "stop_loss": 16.48,
+    "rr_ratio": 1.5,
+    "holding_days": 5,
+    "confidence": "MEDIUM",
+    "signals": [
+      "回踩MA20(-6.2%)",
+      "MACD金叉+RSI>50"
+    ],
+    "status": "hit_stop",
+    "pnl_pct": -1.49,
+    "closed_date": "2026-09-22"
+  },
+  {
+    "id": "000768_2026-07-28",
+    "date": "2026-07-28",
+    "code": "000768",
+    "name": "中航西飞",
+    "entry_price": 20.75,
+    "target_price": 21.22,
+    "stop_loss": 20.44,
+    "rr_ratio": 1.5,
+    "holding_days": 5,
+    "confidence": "LOW",
+    "signals": [
+      "MACD金叉+RSI>50"
+    ],
+    "status": "expired",
+    "pnl_pct": 10.41,
+    "closed_date": "2026-09-22"
+  },
+  {
+    "id": "002028_2026-07-28",
+    "date": "2026-07-28",
+    "code": "002028",
+    "name": "思源电气",
+    "entry_price": 168.3,
+    "target_price": 172.09,
+    "stop_loss": 165.78,
+    "rr_ratio": 1.5,
+    "holding_days": 5,
+    "confidence": "MEDIUM",
+    "signals": [
+      "MACD金叉+RSI>50"
+    ],
+    "status": "hit_stop",
+    "pnl_pct": -1.5,
+    "closed_date": "2026-09-22"
+  },
+  {
+    "id": "000001_2026-07-28",
+    "date": "2026-07-28",
+    "code": "000001",
+    "name": "平安银行",
+    "entry_price": 11.11,
+    "target_price": 11.77,
+    "stop_loss": 10.67,
+    "rr_ratio": 1.5,
+    "holding_days": 5,
+    "confidence": "MEDIUM",
+    "signals": [
+      "MACD金叉+RSI>50"
+    ],
+    "status": "expired",
+    "pnl_pct": 5.58,
+    "closed_date": "2026-09-22"
+  },
+  {
+    "id": "000596_2026-07-28",
+    "date": "2026-07-28",
+    "code": "000596",
+    "name": "古井贡酒",
+    "entry_price": 87.75,
+    "target_price": 89.72,
+    "stop_loss": 86.43,
+    "rr_ratio": 1.5,
+    "holding_days": 5,
+    "confidence": "MEDIUM",
+    "signals": [
+      "MACD金叉+RSI>50"
+    ],
+    "status": "expired",
+    "pnl_pct": 8.79,
+    "closed_date": "2026-09-22"
+  },
+  {
+    "id": "002236_2026-07-28",
+    "date": "2026-07-28",
+    "code": "002236",
+    "name": "大华股份",
+    "entry_price": 16.73,
+    "target_price": 17.11,
+    "stop_loss": 16.48,
+    "rr_ratio": 1.5,
+    "holding_days": 5,
+    "confidence": "MEDIUM",
+    "signals": [
+      "回踩MA20(-6.2%)",
+      "MACD金叉+RSI>50"
+    ],
+    "status": "hit_stop",
+    "pnl_pct": -1.49,
+    "closed_date": "2026-09-22"
+  },
+  {
+    "id": "000768_2026-07-28",
+    "date": "2026-07-28",
+    "code": "000768",
+    "name": "中航西飞",
+    "entry_price": 20.75,
+    "target_price": 21.22,
+    "stop_loss": 20.44,
+    "rr_ratio": 1.5,
+    "holding_days": 5,
+    "confidence": "LOW",
+    "signals": [
+      "MACD金叉+RSI>50"
+    ],
+    "status": "expired",
+    "pnl_pct": 10.41,
+    "closed_date": "2026-09-22"
+  },
+  {
+    "id": "002028_2026-07-28",
+    "date": "2026-07-28",
+    "code": "002028",
+    "name": "思源电气",
+    "entry_price": 168.3,
+    "target_price": 172.09,
+    "stop_loss": 165.78,
+    "rr_ratio": 1.5,
+    "holding_days": 5,
+    "confidence": "MEDIUM",
+    "signals": [
+      "MACD金叉+RSI>50"
+    ],
+    "status": "hit_stop",
+    "pnl_pct": -1.5,
+    "closed_date": "2026-09-22"
+  },
+  {
+    "id": "000001_2026-07-28",
+    "date": "2026-07-28",
+    "code": "000001",
+    "name": "平安银行",
+    "entry_price": 11.11,
+    "target_price": 11.77,
+    "stop_loss": 10.67,
+    "rr_ratio": 1.5,
+    "holding_days": 5,
+    "confidence": "MEDIUM",
+    "signals": [
+      "MACD金叉+RSI>50"
+    ],
+    "status": "expired",
+    "pnl_pct": 5.58,
+    "closed_date": "2026-09-22"
+  },
+  {
+    "id": "000596_2026-07-28",
+    "date": "2026-07-28",
+    "code": "000596",
+    "name": "古井贡酒",
+    "entry_price": 87.75,
+    "target_price": 89.72,
+    "stop_loss": 86.43,
+    "rr_ratio": 1.5,
+    "holding_days": 5,
+    "confidence": "MEDIUM",
+    "signals": [
+      "MACD金叉+RSI>50"
+    ],
+    "status": "expired",
+    "pnl_pct": 8.79,
+    "closed_date": "2026-09-22"
+  },
+  {
+    "id": "002236_2026-07-28",
+    "date": "2026-07-28",
+    "code": "002236",
+    "name": "大华股份",
+    "entry_price": 16.73,
+    "target_price": 17.11,
+    "stop_loss": 16.48,
+    "rr_ratio": 1.5,
+    "holding_days": 5,
+    "confidence": "MEDIUM",
+    "signals": [
+      "回踩MA20(-6.2%)",
+      "MACD金叉+RSI>50"
+    ],
+    "status": "hit_stop",
+    "pnl_pct": -1.49,
+    "closed_date": "2026-09-22"
+  },
+  {
+    "id": "000768_2026-07-28",
+    "date": "2026-07-28",
+    "code": "000768",
+    "name": "中航西飞",
+    "entry_price": 20.75,
+    "target_price": 21.22,
+    "stop_loss": 20.44,
+    "rr_ratio": 1.5,
+    "holding_days": 5,
+    "confidence": "LOW",
+    "signals": [
+      "MACD金叉+RSI>50"
+    ],
+    "status": "expired",
+    "pnl_pct": 10.41,
+    "closed_date": "2026-09-22"
+  },
+  {
+    "id": "002236_2026-07-28",
+    "date": "2026-07-28",
+    "code": "002236",
+    "name": "大华股份",
+    "entry_price": 16.73,
+    "stop_loss": 16.4,
+    "stop_pct": 1.97,
+    "confidence": "LOW",
+    "signals": [
+      "MACD金叉+RSI>50"
+    ],
+    "status": "hit_stop",
+    "pnl_pct": -1.97,
+    "closed_date": "2026-09-22"
+  },
+  {
+    "id": "600938_2026-07-28",
+    "date": "2026-07-28",
+    "code": "600938",
+    "name": "中国海油",
+    "entry_price": 31.55,
+    "stop_loss": 30.92,
+    "stop_pct": 2.0,
+    "confidence": "MEDIUM",
+    "signals": [
+      "MACD金叉+RSI>50"
+    ],
+    "status": "pending",
+    "pnl_pct": null,
+    "closed_date": null
+  },
+  {
+    "id": "300750_2026-07-28",
+    "date": "2026-07-28",
+    "code": "300750",
+    "name": "宁德时代",
+    "entry_price": 400.0,
+    "stop_loss": 392.0,
+    "stop_pct": 2.0,
+    "confidence": "MEDIUM",
+    "signals": [
+      "MACD金叉+RSI>50"
+    ],
+    "status": "pending",
+    "pnl_pct": null,
+    "closed_date": null
+  },
+  {
+    "id": "600219_2026-07-28",
+    "date": "2026-07-28",
+    "code": "600219",
+    "name": "南山铝业",
+    "entry_price": 4.52,
+    "stop_loss": 4.43,
+    "stop_pct": 1.99,
+    "confidence": "MEDIUM",
+    "signals": [
+      "MACD金叉+RSI>50"
+    ],
+    "status": "pending",
+    "pnl_pct": null,
+    "closed_date": null
+  },
+  {
+    "id": "600887_2026-07-28",
+    "date": "2026-07-28",
+    "code": "600887",
+    "name": "伊利股份",
+    "entry_price": 26.06,
+    "stop_loss": 25.54,
+    "stop_pct": 2.0,
+    "confidence": "LOW",
+    "signals": [
+      "MACD金叉+RSI>50"
+    ],
+    "status": "pending",
+    "pnl_pct": null,
+    "closed_date": null
+  },
+  {
+    "id": "002236_2026-07-28",
+    "date": "2026-07-28",
+    "code": "002236",
+    "name": "大华股份",
+    "entry_price": 16.73,
+    "stop_loss": 16.4,
+    "stop_pct": 1.97,
+    "confidence": "LOW",
+    "signals": [
+      "MACD金叉+RSI>50"
+    ],
+    "status": "hit_stop",
+    "pnl_pct": -1.97,
+    "closed_date": "2026-09-22"
+  },
+  {
+    "id": "600938_2026-07-28",
+    "date": "2026-07-28",
+    "code": "600938",
+    "name": "中国海油",
+    "entry_price": 31.55,
+    "stop_loss": 30.92,
+    "stop_pct": 2.0,
+    "confidence": "MEDIUM",
+    "signals": [
+      "MACD金叉+RSI>50"
+    ],
+    "status": "pending",
+    "pnl_pct": null,
+    "closed_date": null
+  },
+  {
+    "id": "300750_2026-07-28",
+    "date": "2026-07-28",
+    "code": "300750",
+    "name": "宁德时代",
+    "entry_price": 400.0,
+    "stop_loss": 392.0,
+    "stop_pct": 2.0,
+    "confidence": "MEDIUM",
+    "signals": [
+      "MACD金叉+RSI>50"
+    ],
+    "status": "pending",
+    "pnl_pct": null,
+    "closed_date": null
+  },
+  {
+    "id": "600219_2026-07-28",
+    "date": "2026-07-28",
+    "code": "600219",
+    "name": "南山铝业",
+    "entry_price": 4.52,
+    "stop_loss": 4.43,
+    "stop_pct": 1.99,
+    "confidence": "MEDIUM",
+    "signals": [
+      "MACD金叉+RSI>50"
+    ],
+    "status": "pending",
+    "pnl_pct": null,
+    "closed_date": null
+  },
+  {
+    "id": "002236_2026-07-28",
+    "date": "2026-07-28",
+    "code": "002236",
+    "name": "大华股份",
+    "entry_price": 16.73,
+    "stop_loss": 16.4,
+    "stop_pct": 1.97,
+    "confidence": "LOW",
+    "signals": [
+      "MACD金叉+RSI>50"
+    ],
+    "status": "hit_stop",
+    "pnl_pct": -1.97,
+    "closed_date": "2026-09-22"
+  },
+  {
+    "id": "600887_2026-07-28",
+    "date": "2026-07-28",
+    "code": "600887",
+    "name": "伊利股份",
+    "entry_price": 26.06,
+    "stop_loss": 25.54,
+    "stop_pct": 2.0,
+    "confidence": "LOW",
+    "signals": [
+      "MACD金叉+RSI>50"
+    ],
+    "status": "pending",
+    "pnl_pct": null,
+    "closed_date": null
+  },
+  {
+    "id": "600938_2026-07-28",
+    "date": "2026-07-28",
+    "code": "600938",
+    "name": "中国海油",
+    "entry_price": 31.55,
+    "stop_loss": 30.92,
+    "stop_pct": 2.0,
+    "confidence": "MEDIUM",
+    "signals": [
+      "MACD金叉+RSI>50"
+    ],
+    "status": "pending",
+    "pnl_pct": null,
+    "closed_date": null
+  },
+  {
+    "id": "300750_2026-07-28",
+    "date": "2026-07-28",
+    "code": "300750",
+    "name": "宁德时代",
+    "entry_price": 400.0,
+    "stop_loss": 392.0,
+    "stop_pct": 2.0,
+    "confidence": "MEDIUM",
+    "signals": [
+      "MACD金叉+RSI>50"
+    ],
+    "status": "pending",
+    "pnl_pct": null,
+    "closed_date": null
+  },
+  {
+    "id": "600219_2026-07-28",
+    "date": "2026-07-28",
+    "code": "600219",
+    "name": "南山铝业",
+    "entry_price": 4.52,
+    "stop_loss": 4.43,
+    "stop_pct": 1.99,
+    "confidence": "MEDIUM",
+    "signals": [
+      "MACD金叉+RSI>50"
+    ],
+    "status": "pending",
+    "pnl_pct": null,
+    "closed_date": null
+  },
+  {
+    "id": "600887_2026-07-28",
+    "date": "2026-07-28",
+    "code": "600887",
+    "name": "伊利股份",
+    "entry_price": 26.06,
+    "stop_loss": 25.54,
+    "stop_pct": 2.0,
+    "confidence": "LOW",
+    "signals": [
+      "MACD金叉+RSI>50"
+    ],
+    "status": "pending",
+    "pnl_pct": null,
+    "closed_date": null
+  },
+  {
+    "id": "002236_2026-07-28",
+    "date": "2026-07-28",
+    "code": "002236",
+    "name": "大华股份",
+    "entry_price": 16.73,
+    "stop_loss": 16.4,
+    "stop_pct": 1.97,
+    "confidence": "LOW",
+    "signals": [
+      "MACD金叉+RSI>50"
+    ],
+    "status": "hit_stop",
+    "pnl_pct": -1.97,
+    "closed_date": "2026-09-22"
+  },
+  {
+    "id": "600938_2026-07-28",
+    "date": "2026-07-28",
+    "code": "600938",
+    "name": "中国海油",
+    "entry_price": 31.55,
+    "stop_loss": 30.92,
+    "stop_pct": 2.0,
+    "confidence": "MEDIUM",
+    "signals": [
+      "MACD金叉+RSI>50"
+    ],
+    "status": "pending",
+    "pnl_pct": null,
+    "closed_date": null
+  },
+  {
+    "id": "300750_2026-07-28",
+    "date": "2026-07-28",
+    "code": "300750",
+    "name": "宁德时代",
+    "entry_price": 400.0,
+    "stop_loss": 392.0,
+    "stop_pct": 2.0,
+    "confidence": "MEDIUM",
+    "signals": [
+      "MACD金叉+RSI>50"
+    ],
+    "status": "pending",
+    "pnl_pct": null,
+    "closed_date": null
+  },
+  {
+    "id": "600219_2026-07-28",
+    "date": "2026-07-28",
+    "code": "600219",
+    "name": "南山铝业",
+    "entry_price": 4.52,
+    "stop_loss": 4.43,
+    "stop_pct": 1.99,
+    "confidence": "MEDIUM",
+    "signals": [
+      "MACD金叉+RSI>50"
+    ],
+    "status": "pending",
+    "pnl_pct": null,
+    "closed_date": null
+  },
+  {
+    "id": "600887_2026-07-28",
+    "date": "2026-07-28",
+    "code": "600887",
+    "name": "伊利股份",
+    "entry_price": 26.06,
+    "stop_loss": 25.54,
+    "stop_pct": 2.0,
+    "confidence": "LOW",
+    "signals": [
+      "MACD金叉+RSI>50"
+    ],
+    "status": "pending",
+    "pnl_pct": null,
+    "closed_date": null
+  },
+  {
+    "id": "002236_2026-07-28",
+    "date": "2026-07-28",
+    "code": "002236",
+    "name": "大华股份",
+    "entry_price": 16.73,
+    "stop_loss": 16.4,
+    "stop_pct": 1.97,
+    "confidence": "LOW",
+    "signals": [
+      "MACD金叉+RSI>50"
+    ],
+    "status": "hit_stop",
+    "pnl_pct": -1.97,
+    "closed_date": "2026-09-22"
+  },
+  {
+    "id": "000725_2026-09-22",
+    "date": "2026-09-22",
+    "code": "000725",
+    "name": "京东方Ａ",
+    "entry_price": 6.07,
+    "stop_loss": 5.95,
+    "stop_pct": 1.98,
+    "confidence": "MEDIUM",
+    "signals": [
+      "MACD金叉+RSI>50"
+    ],
+    "status": "pending",
+    "pnl_pct": null,
+    "closed_date": null
+  }
+]

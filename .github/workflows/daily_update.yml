@@ -56,5 +56,9 @@ jobs:
           git config user.name "quant-bot"
           git config user.email "bot@ashare-quant.dev"
           git add position/paper_state.json position/paper_log.csv position/push_log.json
+          # [修复 2026-09-22] predictions持久化: 此前reports/*.json被gitignore且不入库,
+          # Actions每天覆盖后丢弃, 预测追踪/胜率统计从未真正积累
+          git add -f reports/predictions.json 2>/dev/null || true
+          git add -f reports/recommendations.json 2>/dev/null || true
           git diff --cached --quiet || git commit -m "📊 模拟盘 $(date +%Y-%m-%d)"
           git push
