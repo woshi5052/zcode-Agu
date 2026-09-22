@@ -16,6 +16,10 @@ from ai.sentiment import enhance_with_sentiment
 from notification.feishu import send_to_feishu
 from tracker.predictor import add_predictions, check_predictions, save_recommendations
 
+# 资金约束: 1万本金, A股1手=100股, 最高可买股价
+INITIAL_CAPITAL = 10000.0
+MAX_AFFORDABLE_PRICE = INITIAL_CAPITAL / 100  # ¥100
+
 
 def fetch_data(codes: list, max_stocks: int = 300) -> dict:
     """拉取全量K线 (AKShare东财)
@@ -184,6 +188,13 @@ def main():
                                      top_n=params.get("top_n", 5), params=params)
         print("  大盘bull(>MA20×1.02): 正常推票")
     cand_count = len(results)
+    # [资金约束] 1万本金, 1手(100股)成本必须买得起: 股价≤100元
+    if results:
+        before = len(results)
+        results = [r for r in results
+                   if float(r.get("entry_price", 0)) <= MAX_AFFORDABLE_PRICE]
+        if len(results) < before:
+            print(f"  价格过滤(>¥{MAX_AFFORDABLE_PRICE}买不起1手): {before}→{len(results)}")
     print(f"策略候选: {cand_count} 支")
 
     # 4. 基本面三关过滤 [新]
