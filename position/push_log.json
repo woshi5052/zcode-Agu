@@ -1,8 +1,8 @@
 {
-  "time_bjt": "2026-09-21 22:40:16",
+  "time_bjt": "2026-09-22 08:46:38",
   "feishu_ok": true,
-  "final_count": 0,
+  "final_count": 1,
   "data_count": 300,
-  "market_weak": true,
-  "ai_used": false
+  "regime": "sideways",
+  "ai_used": true
 }
