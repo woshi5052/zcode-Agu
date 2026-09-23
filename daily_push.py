@@ -114,11 +114,20 @@ def fundamental_filter(results: list) -> list:
             if price <= 0:
                 kept.append(r)
                 continue
-            try:
-                ok, reason = pit_check(r["code"], as_of, price)
-            except Exception as e:
-                print(f"  ⚠️ {r['name']}({r['code']}) 检查异常({str(e)[:40]}): 放行")
-                kept.append(r)
+            ok = True
+            reason = ""
+            # [加固 2026-09-23] eltdx 偶发超时曾导致整场过滤静默跳过, 重试1次
+            for attempt in range(2):
+                try:
+                    ok, reason = pit_check(r["code"], as_of, price)
+                    break
+                except Exception as e:
+                    if attempt == 0:
+                        time.sleep(1)
+                        continue
+                    print(f"  ⚠️ {r['name']}({r['code']}) 检查异常(重试后仍失败: {str(e)[:40]}): 放行")
+                    reason = "检查异常(放行)"
+                    break
                 continue
             if ok:
                 kept.append(r)
