@@ -231,6 +231,14 @@ def main():
             print("  大盘bull(>MA20×1.02): 正常推票")
     cand_count = len(results)
 
+    # [口径标注 2026-09-23] 决策B: 股价>¥10的票受10%仓位(¥1000预算)约束,
+    # 模拟盘/回测未跟踪其成交 — 推送消息中标注为观察参考
+    for r in results:
+        if float(r.get("entry_price", 0)) > 10:
+            sig = r.setdefault("signals", [])
+            if not any("观察参考" in s for s in sig):
+                sig.append("观察参考:一手超10%仓位预算,模拟盘未跟踪")
+
     # 5. AI 增强 (记录真实状态)
     ai_used = False
     if results:
