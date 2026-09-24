@@ -51,6 +51,10 @@ jobs:
           python paper_trade.py
           echo "模拟盘完成"
 
+      - name: Run Out-of-Pool Watch Scan (实验② 池外观察名单)
+        run: |
+          python scripts/watch_scan.py || echo "watch scan failed (非致命, 不阻断)"
+
       - name: Commit Paper State
         run: |
           git config user.name "quant-bot"
@@ -60,5 +64,7 @@ jobs:
           # Actions每天覆盖后丢弃, 预测追踪/胜率统计从未真正积累
           git add -f reports/predictions.json 2>/dev/null || true
           git add -f reports/recommendations.json 2>/dev/null || true
+          # [实验② 2026-09-24] 池外观察名单持久化
+          git add -f reports/watchlist_scan.json 2>/dev/null || true
           git diff --cached --quiet || git commit -m "📊 模拟盘 $(date +%Y-%m-%d)"
           git push

@@ -252,6 +252,47 @@ def main():
         for r in results:
             print(f"  ✅ {r['name']} ¥{r['entry_price']} 评分{r.get('score','')}")
 
+    # 5.5 资金面维度 (实验① 2026-09-24): 候选股当日主力净流入
+    # 推荐评分原为纯技术面, 缺资金面维度 (国轩高科连推但主力持续流出的教训)
+    # 评分下调10% + 消息标注, fund_flag 记入 push_log 供后续命中率对比
+    fund_flags = []
+    if results:
+        for r in results:
+            code = r.get("code", "")
+            main_net = None
+            # 东财资金流接口偶发重置, 重试2次 (失败则不计分, 不影响推送)
+            for attempt in range(2):
+                try:
+                    market = "sz" if code.startswith(("0", "3")) else "sh"
+                    ff = ak.stock_individual_fund_flow(stock=code, market=market)
+                    main_net = float(ff.iloc[-1].get("主力净流入-净额", 0) or 0)
+                    break
+                except Exception:
+                    main_net = None
+                    time.sleep(1)
+            try:
+                sig = r.setdefault("signals", [])
+                if main_net is None:
+                    r["fund_flag"] = "unknown"
+                    sig.append("资金面获取失败(不计分)")
+                    print(f"  [WARN] {r.get('name', code)} 资金面获取失败(重试后), 不计分")
+                else:
+                    yi = main_net / 1e8
+                    r["fund_flow_main_yi"] = round(yi, 2)
+                    if main_net < 0:
+                        r["score"] = round(float(r.get("score", 0)) * 0.9, 1)
+                        sig.append(f"⚠️主力净流出{abs(yi):.2f}亿(评分已下调)")
+                        r["fund_flag"] = "OUT"
+                    else:
+                        sig.append(f"🟢主力净流入{yi:.2f}亿")
+                        r["fund_flag"] = "IN"
+            except Exception as e:
+                r["fund_flag"] = "unknown"
+                print(f"  [WARN] {r.get('name', code)} 资金面处理异常: {str(e)[:40]}")
+            fund_flags.append({"code": code, "fund_flag": r.get("fund_flag"),
+                               "flow_yi": r.get("fund_flow_main_yi")})
+        print(f"  资金面: {[(f['code'], f['fund_flag']) for f in fund_flags]}")
+
     # 6. 保存 + 推送
     save_recommendations(results)
     add_predictions(results)
@@ -279,6 +320,7 @@ def main():
         "data_count": len(data),
         "regime": regime,
         "ai_used": bool(ai_used),
+        "fund_flags": fund_flags,
     }
     import json as _json
     with open("position/push_log.json", "w") as f:
