@@ -687,5 +687,39 @@
     "status": "pending",
     "pnl_pct": null,
     "closed_date": null
+  },
+  {
+    "id": "002074_2026-09-23",
+    "date": "2026-09-23",
+    "code": "002074",
+    "name": "国轩高科",
+    "entry_price": 27.73,
+    "stop_loss": 27.18,
+    "stop_pct": 1.98,
+    "confidence": "HIGH",
+    "signals": [
+      "MACD金叉+RSI>50",
+      "观察参考:一手超10%仓位预算,模拟盘未跟踪"
+    ],
+    "status": "pending",
+    "pnl_pct": null,
+    "closed_date": null
+  },
+  {
+    "id": "002074_2026-09-23",
+    "date": "2026-09-23",
+    "code": "002074",
+    "name": "国轩高科",
+    "entry_price": 27.28,
+    "stop_loss": 26.73,
+    "stop_pct": 2.02,
+    "confidence": "MEDIUM",
+    "signals": [
+      "MACD金叉+RSI>50",
+      "观察参考:一手超10%仓位预算,模拟盘未跟踪"
+    ],
+    "status": "pending",
+    "pnl_pct": null,
+    "closed_date": null
   }
 ]
