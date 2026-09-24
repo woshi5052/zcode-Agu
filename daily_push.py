@@ -94,6 +94,41 @@ def fetch_data(codes: list, max_stocks: int = 300) -> dict:
     return data
 
 
+def apply_fund_flow(results: list) -> list:
+    """[实验① 2026-09-24] 候选股当日主力净流入 → 评分调整+标注
+    动机: 推荐评分原为纯技术面, 缺资金面维度 (国轩高科连推但主力持续流出的教训)
+    东财接口偶发重置: 重试2次, 失败不计分(不影响推送)
+    """
+    for r in results:
+        code = r.get("code", "")
+        main_net = None
+        for attempt in range(2):
+            try:
+                market = "sz" if code.startswith(("0", "3")) else "sh"
+                ff = ak.stock_individual_fund_flow(stock=code, market=market)
+                main_net = float(ff.iloc[-1].get("主力净流入-净额", 0) or 0)
+                break
+            except Exception:
+                main_net = None
+                time.sleep(1)
+        sig = r.setdefault("signals", [])
+        if main_net is None:
+            r["fund_flag"] = "unknown"
+            sig.append("资金面获取失败(不计分)")
+            print(f"  [WARN] {r.get('name', code)} 资金面获取失败(重试后), 不计分")
+        else:
+            yi = main_net / 1e8
+            r["fund_flow_main_yi"] = round(yi, 2)
+            if main_net < 0:
+                r["score"] = round(float(r.get("score", 0)) * 0.9, 1)
+                sig.append(f"⚠️主力净流出{abs(yi):.2f}亿(评分已下调)")
+                r["fund_flag"] = "OUT"
+            else:
+                sig.append(f"🟢主力净流入{yi:.2f}亿")
+                r["fund_flag"] = "IN"
+    return results
+
+
 def fundamental_filter(results: list) -> list:
     """
     基本面三关过滤 (AKShare PIT版 — 与回测验证配置一致, Actions可用)
@@ -224,6 +259,8 @@ def main():
     # [修复 2026-09-22] 顺序改为: 策略出候选 → 资金约束 → 基本面过滤 → 再按regime截取,
     # 此前震荡市先截top1再过滤, top1买不起当天就空推荐 (09-22上午实际发生)
     filtered = stock_pool_filter(data, names_map=names)
+    sideways_veto = False
+    cooled = 0
     if regime == "bear":
         results = []
         fund_rejects = []
@@ -239,9 +276,34 @@ def main():
             print(f"  价格过滤(>¥{MAX_AFFORDABLE_PRICE}买不起1手): {before}→{len(results)}")
         # 基本面三关过滤
         results, fund_rejects = fundamental_filter(results)
+        # [实验① 2026-09-24] 资金面维度: 主力流出评分-10%+标注 (治"国轩连推但资金持续流出")
+        results = apply_fund_flow(results)
+        # [优化 2026-09-24] 推送冷却: 近3日已推荐的票不再重复推
+        # (对齐回测语义: 一次信号只执行一次, 不做连续多日播报; 模拟盘信号不受影响)
+        try:
+            import datetime as _dtp
+            with open("reports/predictions.json", encoding="utf-8") as f:
+                _preds = json.load(f)
+            _cut = (_dtp.datetime.utcnow() + _dtp.timedelta(hours=8) - _dtp.timedelta(days=3)).strftime("%Y-%m-%d")
+            recent_pushed = {p["code"] for p in _preds if str(p.get("date", "")) >= _cut}
+            before_cd = len(results)
+            results = [r for r in results if r.get("code") not in recent_pushed]
+            cooled = before_cd - len(results)
+            if cooled:
+                print(f"  推送冷却(近3日已推荐,剔除{cooled}支): {before_cd}→{len(results)}")
+        except Exception as e:
+            print(f"  [WARN] 推送冷却检查失败: {str(e)[:40]}")
         if regime == "sideways":
-            results = results[:1]
-            print("  大盘sideways(±2%区间): 过滤后取评分最高1支")
+            # [优化 2026-09-24] 震荡市宁缺勿滥: 唯一候选主力净流出 → 空推
+            if results and results[0].get("fund_flag") == "OUT":
+                r0 = results[0]
+                print(f"  震荡市宁缺勿滥: 唯一候选 {r0.get('name')} 主力净流出"
+                      f"{r0.get('fund_flow_main_yi', '?')}亿 → 空推")
+                sideways_veto = True
+                results = []
+            else:
+                results = results[:1]
+                print("  大盘sideways(±2%区间): 过滤后取评分最高1支")
         else:
             print("  大盘bull(>MA20×1.02): 正常推票")
     cand_count = len(results)
@@ -267,46 +329,9 @@ def main():
         for r in results:
             print(f"  ✅ {r['name']} ¥{r['entry_price']} 评分{r.get('score','')}")
 
-    # 5.5 资金面维度 (实验① 2026-09-24): 候选股当日主力净流入
-    # 推荐评分原为纯技术面, 缺资金面维度 (国轩高科连推但主力持续流出的教训)
-    # 评分下调10% + 消息标注, fund_flag 记入 push_log 供后续命中率对比
-    fund_flags = []
-    if results:
-        for r in results:
-            code = r.get("code", "")
-            main_net = None
-            # 东财资金流接口偶发重置, 重试2次 (失败则不计分, 不影响推送)
-            for attempt in range(2):
-                try:
-                    market = "sz" if code.startswith(("0", "3")) else "sh"
-                    ff = ak.stock_individual_fund_flow(stock=code, market=market)
-                    main_net = float(ff.iloc[-1].get("主力净流入-净额", 0) or 0)
-                    break
-                except Exception:
-                    main_net = None
-                    time.sleep(1)
-            try:
-                sig = r.setdefault("signals", [])
-                if main_net is None:
-                    r["fund_flag"] = "unknown"
-                    sig.append("资金面获取失败(不计分)")
-                    print(f"  [WARN] {r.get('name', code)} 资金面获取失败(重试后), 不计分")
-                else:
-                    yi = main_net / 1e8
-                    r["fund_flow_main_yi"] = round(yi, 2)
-                    if main_net < 0:
-                        r["score"] = round(float(r.get("score", 0)) * 0.9, 1)
-                        sig.append(f"⚠️主力净流出{abs(yi):.2f}亿(评分已下调)")
-                        r["fund_flag"] = "OUT"
-                    else:
-                        sig.append(f"🟢主力净流入{yi:.2f}亿")
-                        r["fund_flag"] = "IN"
-            except Exception as e:
-                r["fund_flag"] = "unknown"
-                print(f"  [WARN] {r.get('name', code)} 资金面处理异常: {str(e)[:40]}")
-            fund_flags.append({"code": code, "fund_flag": r.get("fund_flag"),
-                               "flow_yi": r.get("fund_flow_main_yi")})
-        print(f"  资金面: {[(f['code'], f['fund_flag']) for f in fund_flags]}")
+    # 资金面标记汇总 (apply_fund_flow 已在策略阶段调用)
+    fund_flags = [{"code": r.get("code"), "fund_flag": r.get("fund_flag"),
+                   "flow_yi": r.get("fund_flow_main_yi")} for r in results]
 
     # 6. 保存 + 推送
     save_recommendations(results)
@@ -324,6 +349,8 @@ def main():
         "大盘状态": regime_label.get(regime, regime),
         "数据完整": "否(限流,仅供参考)" if data_incomplete else "是",
         "市场情绪": f"{senti_score}({senti_level})" + (" ⚠️冰点压制" if senti_suppress else ""),
+        "推送冷却": f"剔除{cooled}支(近3日已推荐)" if cooled else "无",
+        "震荡市宁缺勿滥": "唯一候选主力流出→空推" if sideways_veto else "未触发",
     }
     # [治理 2026-09-24] push触发盘中运行不重复推送飞书 (每天只在15:30定时运行推送)
     # 盘中运行仍记录 predictions/push_log, 供验证与追踪
