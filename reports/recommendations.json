@@ -1,31 +1,6 @@
 {
   "date": "2026-09-24",
-  "generated_at": "2026-09-24T03:35:41.501979",
-  "count": 1,
-  "recommendations": [
-    {
-      "code": "002074",
-      "name": "国轩高科",
-      "entry_price": 27.28,
-      "stop_loss": 26.73,
-      "stop_pct": 2.02,
-      "target_price": 29.63,
-      "target_pct": 8.61,
-      "holding_days": 20,
-      "score": 58.6,
-      "confidence": "MEDIUM",
-      "signals": [
-        "MACD金叉+RSI>50",
-        "观察参考:一手超10%仓位预算,模拟盘未跟踪",
-        "资金面获取失败(不计分)"
-      ],
-      "current_price": 27.28,
-      "reason": "趋势确认",
-      "regime": "sideways",
-      "max_positions": 1,
-      "ai_source": "DeepSeek",
-      "ai_sentiment": "🔴 止损位近，趋势偏弱",
-      "fund_flag": "unknown"
-    }
-  ]
+  "generated_at": "2026-09-24T05:30:53.952814",
+  "count": 0,
+  "recommendations": []
 }
