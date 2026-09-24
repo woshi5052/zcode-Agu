@@ -83,7 +83,8 @@ def build_message(recommendations: list[dict], stats: dict = None,
                 f"  卖出价格: ¥{tp} (+{tp_pct}%) 参考\n"
                 f"  止损价格: ¥{r['stop_loss']} (-{r['stop_pct']}%)\n"
                 f"  预判持有: {hold}天 | 止损方式: ATR移动止损\n"
-                f"  信号: {'+'.join(r.get('signals', [])[:2])}"
+                # [修复 2026-09-24] 此前[:2]截断, 资金面/观察参考等关键标注显示不出来
+                f"  信号: {'+'.join(r.get('signals', [])[:4])}"
             )
     else:
         lines.append("\n  📭 今日无符合条件的推荐")

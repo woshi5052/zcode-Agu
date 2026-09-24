@@ -325,13 +325,24 @@ def main():
         "数据完整": "否(限流,仅供参考)" if data_incomplete else "是",
         "市场情绪": f"{senti_score}({senti_level})" + (" ⚠️冰点压制" if senti_suppress else ""),
     }
-    ok = send_to_feishu(results, stats, diag=diag)
+    # [治理 2026-09-24] push触发盘中运行不重复推送飞书 (每天只在15:30定时运行推送)
+    # 盘中运行仍记录 predictions/push_log, 供验证与追踪
+    import os as _os
+    event_name = _os.getenv("GITHUB_EVENT_NAME", "local")
+    is_silent_run = event_name == "push"
+    if is_silent_run:
+        print(f"  [INFO] {event_name}触发运行: 跳过飞书推送(防重复), 数据照常记录")
+        ok = True
+    else:
+        ok = send_to_feishu(results, stats, diag=diag)
 
     # 推送结果落盘 (供远程排查: workflow 会 commit 此文件)
     import datetime as _dt
     push_log = {
         "time_bjt": (_dt.datetime.utcnow() + _dt.timedelta(hours=8)).strftime("%Y-%m-%d %H:%M:%S"),
         "feishu_ok": bool(ok),
+        "feishu_skipped": is_silent_run,
+        "event": event_name,
         "final_count": len(results),
         "data_count": len(data),
         "regime": regime,
