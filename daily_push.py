@@ -205,6 +205,21 @@ def main():
     # 2. 大盘 regime 三态检查 (回测验证设计: 牛3/震荡1/熊0)
     regime = check_market_regime(data)
 
+    # 2.5 市场情绪周期 (第二维度, 2026-09-24): 涨停池/炸板/跌停百分位合成 0-100
+    # 冰点(<25)时压制震荡市推荐 (验证: 低情绪组后3日-0.58% vs 高情绪组+0.36%, 11样本)
+    senti_score, senti_level, senti_suppress = None, "获取失败", False
+    try:
+        from strategies.sentiment_cycle import get_market_sentiment
+        senti = get_market_sentiment()
+        senti_score, senti_level = senti.get("score"), senti.get("level")
+        print(f"  市场情绪: {senti_score} ({senti_level})")
+        if senti_score is not None and senti_score < 25 and regime == "sideways":
+            regime = "bear"
+            senti_suppress = True
+            print("  情绪冰点(<25): 震荡市推荐被压制 → 空仓")
+    except Exception as e:
+        print(f"  [WARN] 情绪指标获取失败: {str(e)[:50]}")
+
     # 3. 过滤 + 策略
     # [修复 2026-09-22] 顺序改为: 策略出候选 → 资金约束 → 基本面过滤 → 再按regime截取,
     # 此前震荡市先截top1再过滤, top1买不起当天就空推荐 (09-22上午实际发生)
@@ -308,6 +323,7 @@ def main():
         "最终推荐": len(results),
         "大盘状态": regime_label.get(regime, regime),
         "数据完整": "否(限流,仅供参考)" if data_incomplete else "是",
+        "市场情绪": f"{senti_score}({senti_level})" + (" ⚠️冰点压制" if senti_suppress else ""),
     }
     ok = send_to_feishu(results, stats, diag=diag)
 
