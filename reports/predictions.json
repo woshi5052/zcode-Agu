@@ -721,5 +721,23 @@
     "status": "pending",
     "pnl_pct": null,
     "closed_date": null
+  },
+  {
+    "id": "002074_2026-09-24",
+    "date": "2026-09-24",
+    "code": "002074",
+    "name": "国轩高科",
+    "entry_price": 27.28,
+    "stop_loss": 26.73,
+    "stop_pct": 2.02,
+    "confidence": "MEDIUM",
+    "signals": [
+      "MACD金叉+RSI>50",
+      "观察参考:一手超10%仓位预算,模拟盘未跟踪",
+      "⚠️主力净流出1.52亿(评分已下调)"
+    ],
+    "status": "pending",
+    "pnl_pct": null,
+    "closed_date": null
   }
 ]

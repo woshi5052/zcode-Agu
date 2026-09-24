@@ -1,6 +1,6 @@
 {
-  "date": "2026-09-23",
-  "generated_at": "2026-09-23T12:58:37.206918",
+  "date": "2026-09-24",
+  "generated_at": "2026-09-24T02:51:35.716328",
   "count": 1,
   "recommendations": [
     {
@@ -12,18 +12,21 @@
       "target_price": 29.63,
       "target_pct": 8.61,
       "holding_days": 20,
-      "score": 58.6,
+      "score": 52.7,
       "confidence": "MEDIUM",
       "signals": [
         "MACD金叉+RSI>50",
-        "观察参考:一手超10%仓位预算,模拟盘未跟踪"
+        "观察参考:一手超10%仓位预算,模拟盘未跟踪",
+        "⚠️主力净流出1.52亿(评分已下调)"
       ],
       "current_price": 27.28,
       "reason": "趋势确认",
       "regime": "sideways",
       "max_positions": 1,
       "ai_source": "DeepSeek",
-      "ai_sentiment": "🔴 止损临近趋势弱"
+      "ai_sentiment": "🔴 止损空间过窄易触发",
+      "fund_flow_main_yi": -1.52,
+      "fund_flag": "OUT"
     }
   ]
 }
