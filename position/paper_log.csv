@@ -12,3 +12,5 @@
 2026-09-24 02:53:15|SNAPSHOT|cash=9394 pos=602 total=9996 pnl=-4 positions=1
 2026-09-24 03:37:16|SNAPSHOT|cash=9394 pos=602 total=9996 pnl=-4 positions=1
 2026-09-24 05:32:21|SNAPSHOT|cash=9394 pos=602 total=9996 pnl=-4 positions=1
+2026-09-24 12:56:25|SELL_SIGNAL|000725 | action=立即卖出 | reason=ATR移动止损触发 | score=10 | signal_price=5.85 | hold_days=2 | profit_pct=-2.5%
+2026-09-24 12:56:25|SNAPSHOT|cash=9394 pos=585 total=9979 pnl=-21 positions=1

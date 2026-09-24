@@ -10,7 +10,15 @@
     }
   },
   "cooldown": {},
-  "pending_orders": [],
+  "pending_orders": [
+    [
+      "000725",
+      "SELL",
+      100,
+      5.85,
+      "ATR移动止损触发"
+    ]
+  ],
   "trades": [],
   "last_run": "2026-09-24"
 }

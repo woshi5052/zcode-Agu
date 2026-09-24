@@ -620,9 +620,9 @@
     "signals": [
       "MACD金叉+RSI>50"
     ],
-    "status": "pending",
-    "pnl_pct": null,
-    "closed_date": null
+    "status": "hit_stop",
+    "pnl_pct": -1.98,
+    "closed_date": "2026-09-24"
   },
   {
     "id": "000725_2026-09-22",
@@ -636,9 +636,9 @@
     "signals": [
       "MACD金叉+RSI>50"
     ],
-    "status": "pending",
-    "pnl_pct": null,
-    "closed_date": null
+    "status": "hit_stop",
+    "pnl_pct": -1.98,
+    "closed_date": "2026-09-24"
   },
   {
     "id": "000725_2026-09-22",
@@ -652,9 +652,9 @@
     "signals": [
       "MACD金叉+RSI>50"
     ],
-    "status": "pending",
-    "pnl_pct": null,
-    "closed_date": null
+    "status": "hit_stop",
+    "pnl_pct": -1.98,
+    "closed_date": "2026-09-24"
   },
   {
     "id": "000725_2026-09-22",
@@ -668,9 +668,9 @@
     "signals": [
       "MACD金叉+RSI>50"
     ],
-    "status": "pending",
-    "pnl_pct": null,
-    "closed_date": null
+    "status": "hit_stop",
+    "pnl_pct": -1.98,
+    "closed_date": "2026-09-24"
   },
   {
     "id": "002074_2026-09-22",
@@ -684,9 +684,9 @@
     "signals": [
       "MACD金叉+RSI>50"
     ],
-    "status": "pending",
-    "pnl_pct": null,
-    "closed_date": null
+    "status": "hit_stop",
+    "pnl_pct": -1.98,
+    "closed_date": "2026-09-24"
   },
   {
     "id": "002074_2026-09-23",
@@ -701,9 +701,9 @@
       "MACD金叉+RSI>50",
       "观察参考:一手超10%仓位预算,模拟盘未跟踪"
     ],
-    "status": "pending",
-    "pnl_pct": null,
-    "closed_date": null
+    "status": "hit_stop",
+    "pnl_pct": -1.98,
+    "closed_date": "2026-09-24"
   },
   {
     "id": "002074_2026-09-23",
