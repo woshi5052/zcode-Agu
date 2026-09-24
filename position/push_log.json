@@ -1,5 +1,5 @@
 {
-  "time_bjt": "2026-09-24 10:51:37",
+  "time_bjt": "2026-09-24 11:35:43",
   "feishu_ok": true,
   "final_count": 1,
   "data_count": 49,
@@ -8,8 +8,8 @@
   "fund_flags": [
     {
       "code": "002074",
-      "fund_flag": "OUT",
-      "flow_yi": -1.52
+      "fund_flag": "unknown",
+      "flow_yi": null
     }
   ]
 }
