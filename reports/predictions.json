@@ -718,9 +718,9 @@
       "MACD金叉+RSI>50",
       "观察参考:一手超10%仓位预算,模拟盘未跟踪"
     ],
-    "status": "pending",
-    "pnl_pct": null,
-    "closed_date": null
+    "status": "hit_stop",
+    "pnl_pct": -2.02,
+    "closed_date": "2026-09-28"
   },
   {
     "id": "002074_2026-09-24",
@@ -736,9 +736,9 @@
       "观察参考:一手超10%仓位预算,模拟盘未跟踪",
       "⚠️主力净流出1.52亿(评分已下调)"
     ],
-    "status": "pending",
-    "pnl_pct": null,
-    "closed_date": null
+    "status": "hit_stop",
+    "pnl_pct": -2.02,
+    "closed_date": "2026-09-28"
   },
   {
     "id": "002074_2026-09-24",
@@ -754,8 +754,8 @@
       "观察参考:一手超10%仓位预算,模拟盘未跟踪",
       "资金面获取失败(不计分)"
     ],
-    "status": "pending",
-    "pnl_pct": null,
-    "closed_date": null
+    "status": "hit_stop",
+    "pnl_pct": -2.02,
+    "closed_date": "2026-09-28"
   }
 ]
