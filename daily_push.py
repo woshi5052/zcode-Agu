@@ -414,7 +414,7 @@ def main():
     diag = {
         "数据支数": len(data),
         "池子过滤后": len(filtered),
-        "策略候选": "跳过(空仓)" if regime == "bear" else cand_count,
+        "策略候选": "0(空仓跳过)" if regime == "bear" else cand_count,
         "基本面拦截": fund_rejects,
         "最终推荐": len(results),
         "大盘状态": regime_label.get(regime, regime),
