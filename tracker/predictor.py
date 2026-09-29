@@ -65,6 +65,18 @@ def add_predictions(recommendations: list[dict], holding_days: int = 5):
             "pnl_pct": None,
             "closed_date": None,
         }
+        # [执行单 2026-09-29] 交易计划存档, 供执行质量跟踪
+        _tp = r.get("trade_plan")
+        if _tp:
+            pred["trade_plan"] = {
+                "mode": _tp.get("mode"),
+                "shares": _tp.get("shares"),
+                "first_shares": _tp.get("first_shares"),
+                "add_shares": _tp.get("add_shares"),
+                "add_price": _tp.get("add_price"),
+                "tp1": _tp.get("tp1"),
+                "tp2": _tp.get("tp2"),
+            }
         predictions.append(pred)
 
     save_predictions(predictions)

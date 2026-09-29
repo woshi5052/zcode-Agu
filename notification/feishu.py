@@ -86,6 +86,24 @@ def build_message(recommendations: list[dict], stats: dict = None,
                 # [修复 2026-09-24] 此前[:2]截断, 资金面/观察参考等关键标注显示不出来
                 f"  信号: {'+'.join(r.get('signals', [])[:4])}"
             )
+            # [执行单 2026-09-29] 买几股/怎么分批/多少钱卖, 照单执行
+            _tp = r.get("trade_plan")
+            if _tp:
+                if _tp.get("mode") == "watch":
+                    lines.append(
+                        f"  📋 执行单: 仅观察 — {_tp.get('note', '')} | "
+                        f"止损参考¥{_tp.get('stop_loss')} 止盈参考¥{_tp.get('tp1')}"
+                    )
+                else:
+                    _add = _tp.get("add_shares", 0)
+                    _add_txt = (f" | 回踩¥{_tp.get('add_price')}(MA20)不破→补{_add}股"
+                                if _add else " | 预算仅1手, 一次建满")
+                    lines.append(
+                        f"  📋 执行单: 首仓{_tp.get('first_shares')}股≈¥{_tp.get('first_cost')}{_add_txt}\n"
+                        f"  止损: ¥{_tp.get('stop_loss')} (-{_tp.get('stop_pct')}%) 触发无条件卖·禁止补仓摊薄\n"
+                        f"  止盈: ①¥{_tp.get('tp1')}(+{_tp.get('tp1_pct')}%)卖一半 ②剩余看¥{_tp.get('tp2')}(ATR目标)\n"
+                        f"  执行: 次日开盘建仓(T+1) | 14:30-14:45找AI复核"
+                    )
     else:
         lines.append("\n  📭 今日无符合条件的推荐")
 

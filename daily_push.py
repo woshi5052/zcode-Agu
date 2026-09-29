@@ -21,6 +21,11 @@ from tracker.predictor import add_predictions, check_predictions, save_recommend
 INITIAL_CAPITAL = 10000.0
 MAX_AFFORDABLE_PRICE = INITIAL_CAPITAL / 100  # ¥100
 
+# [执行单 2026-09-29] 仓位预算: 单票10%仓位, 与模拟盘/回测口径一致
+POSITION_BUDGET = INITIAL_CAPITAL * 0.10   # ¥1000/票
+TP1_PCT = 8.0                              # 第一段止盈: +8% 卖一半落袋
+TP1_SELL_RATIO = 0.5                       # 第一段卖出比例
+
 
 def get_names_map(codes: list) -> dict:
     """股票代码→名称映射
@@ -126,6 +131,69 @@ def apply_fund_flow(results: list) -> list:
             else:
                 sig.append(f"🟢主力净流入{yi:.2f}亿")
                 r["fund_flag"] = "IN"
+    return results
+
+
+# ============================================
+# 执行单生成 (2026-09-29): 把推荐信号翻译成"买几股/怎么分批/多少钱卖"
+# 痛点: 推荐只给信号, 实盘执行盲目。规则与回测纪律同源:
+#   股数 = floor(单票预算/现价)取整手, 永不超预算
+#   止损 = 策略ATR×3.0初始止损 (trend_engine已算, 直接引用)
+#   止盈两段: +8%卖一半落袋, 剩余看ATR目标价(target_price)
+#   分摊: 首仓半仓, 回踩MA20不破补足; 仅限建仓期, 禁止下跌补仓摊薄
+# ============================================
+
+def build_trade_plans(results: list, data: dict) -> list:
+    """给每条推荐附加执行单 trade_plan (纯本地计算, 零网络依赖)"""
+    for r in results:
+        code = r.get("code", "")
+        df = data.get(code)
+        price = float(r.get("entry_price", 0) or 0)
+        if df is None or len(df) < 25 or price <= 0:
+            continue
+        ma20 = float(df["close"].rolling(20).mean().iloc[-1])
+        tp1 = round(price * (1 + TP1_PCT / 100), 2)
+        if price > POSITION_BUDGET / 100:
+            # 一手超预算的观察参考票: 只给参考价, 不给仓位
+            r["trade_plan"] = {
+                "mode": "watch",
+                "stop_loss": r.get("stop_loss"),
+                "tp1": tp1,
+                "tp2": r.get("target_price"),
+                "note": f"一手¥{int(price * 100)} > 预算¥1000, 仅观察不建仓",
+            }
+            continue
+        shares = int(POSITION_BUDGET / price / 100) * 100
+        if shares <= 0:
+            # 10<股价≤100: 一手成本超单票¥1000预算, 只观察
+            r["trade_plan"] = {
+                "mode": "watch",
+                "stop_loss": r.get("stop_loss"),
+                "tp1": tp1,
+                "tp2": r.get("target_price"),
+                "note": f"一手¥{int(price * 100)} > 预算¥1000, 仅观察不建仓",
+            }
+            continue
+        lots = shares // 100
+        if lots >= 2:
+            first_shares = (lots // 2) * 100
+            add_shares = shares - first_shares
+        else:
+            first_shares, add_shares = shares, 0
+        r["trade_plan"] = {
+            "mode": "split" if add_shares else "single",
+            "shares": shares,
+            "first_shares": first_shares,
+            "add_shares": add_shares,
+            "add_price": round(ma20, 2),
+            "first_cost": round(first_shares * price),
+            "stop_loss": r.get("stop_loss"),
+            "stop_pct": r.get("stop_pct"),
+            "tp1": tp1,
+            "tp1_pct": TP1_PCT,
+            "tp2": r.get("target_price"),
+            "sell_ratio": TP1_SELL_RATIO,
+        }
     return results
 
 
@@ -315,6 +383,9 @@ def main():
             sig = r.setdefault("signals", [])
             if not any("观察参考" in s for s in sig):
                 sig.append("观察参考:一手超10%仓位预算,模拟盘未跟踪")
+
+    # [执行单 2026-09-29] 信号→可执行计划: 买几股/怎么分批/多少钱卖
+    results = build_trade_plans(results, data)
 
     # 5. AI 增强 (记录真实状态)
     ai_used = False
