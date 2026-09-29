@@ -22,6 +22,9 @@ reports/*.json
 .DS_Store
 Thumbs.db
 
+# WorkBuddy session artifacts
+.workbuddy/
+
 # Environment
 .env
 .env.local

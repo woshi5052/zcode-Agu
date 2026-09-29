@@ -51,14 +51,17 @@ STOCK_NAMES = {
 
 def get_universe(as_of: str = None) -> list[str]:
     """as_of 日期的真实股票池 = 当日存续 + 此后退市/ST 的股票（防生存偏差）。
-    简化版：从缓存目录读取已有股票 + 过滤退市名单。
+    [修复 2026-09-29] 股票池以 DEFAULT_UNIVERSE 为准 (与回测/模拟盘同池, 池子即策略)。
+    此前优先读 data/cache/*.csv —— 09-24 的 100 支扩容实验把缓存写爆后,
+    本地运行静默切到 101 支大票池, daily_push[:50] 扫描错误池子
+    (Actions 无缓存未受影响, 但本地演练/paper_trade/月检均被污染)。
+    缓存目录仅作 DEFAULT_UNIVERSE 为空时的兜底, 不再反向覆盖维护池。
     """
-    cache_dir = os.path.join(os.path.dirname(__file__), "cache")
-    codes = []
-    if os.path.exists(cache_dir):
-        codes = [f.replace(".csv", "") for f in os.listdir(cache_dir) if f.endswith(".csv")]
+    codes = DEFAULT_UNIVERSE.copy()
     if not codes:
-        codes = DEFAULT_UNIVERSE.copy()
+        cache_dir = os.path.join(os.path.dirname(__file__), "cache")
+        if os.path.exists(cache_dir):
+            codes = [f.replace(".csv", "") for f in os.listdir(cache_dir) if f.endswith(".csv")]
     if as_of:
         codes = [c for c in codes if not (c in REMOVED_STOCKS and REMOVED_STOCKS[c] < as_of)]
     return codes
