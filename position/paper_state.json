@@ -1,9 +1,7 @@
 {
   "cash": 9985.5046485,
   "positions": {},
-  "cooldown": {
-    "000725": "2026-09-29"
-  },
+  "cooldown": {},
   "pending_orders": [],
   "trades": [
     {
