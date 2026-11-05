@@ -757,5 +757,32 @@
     "status": "hit_stop",
     "pnl_pct": -2.02,
     "closed_date": "2026-09-28"
+  },
+  {
+    "id": "000975_2026-11-05",
+    "date": "2026-11-05",
+    "code": "000975",
+    "name": "山金国际",
+    "entry_price": 24.24,
+    "stop_loss": 23.76,
+    "stop_pct": 1.98,
+    "confidence": "MEDIUM",
+    "signals": [
+      "MACD金叉+RSI>50",
+      "🟢主力净流入0.95亿",
+      "观察参考:一手超10%仓位预算,模拟盘未跟踪"
+    ],
+    "status": "pending",
+    "pnl_pct": null,
+    "closed_date": null,
+    "trade_plan": {
+      "mode": "watch",
+      "shares": null,
+      "first_shares": null,
+      "add_shares": null,
+      "add_price": null,
+      "tp1": 26.18,
+      "tp2": 28.19
+    }
   }
 ]
