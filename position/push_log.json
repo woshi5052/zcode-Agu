@@ -1,17 +1,11 @@
 {
-  "time_bjt": "2026-11-05 23:47:27",
+  "time_bjt": "2026-11-06 23:20:43",
   "feishu_ok": true,
   "feishu_skipped": false,
   "event": "schedule",
-  "final_count": 1,
+  "final_count": 0,
   "data_count": 49,
   "regime": "sideways",
-  "ai_used": true,
-  "fund_flags": [
-    {
-      "code": "000975",
-      "fund_flag": "IN",
-      "flow_yi": 0.95
-    }
-  ]
+  "ai_used": false,
+  "fund_flags": []
 }
