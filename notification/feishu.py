@@ -107,6 +107,19 @@ def build_message(recommendations: list[dict], stats: dict = None,
     else:
         lines.append("\n  📭 今日无符合条件的推荐")
 
+    # [观察推荐 2026-11-09] 熊市空仓时的每日观察参考: 全池评分Top1, 仅观察无执行单
+    wp = (diag or {}).get("观察推荐")
+    if wp and isinstance(wp, dict):
+        _ff = wp.get("fund_flow_main_yi")
+        _ftxt = f"{_ff:+}亿" if isinstance(_ff, (int, float)) else "未知"
+        lines.append(
+            f"\n  📋 今日观察参考: {wp.get('name', '?')} ({wp.get('code', '?')}) | 评分{wp.get('score', '?')}\n"
+            f"  现价: ¥{wp.get('entry_price', '?')} | 主力资金: {_ftxt} ({wp.get('fund_flag', '?')})\n"
+            f"  信号: {'+'.join((wp.get('signals') or [])[:3]) or '无'}\n"
+            f"  ⚠️ 闸门关闭中, 仅观察·无执行单·禁止买入\n"
+            f"  🔓 解锁: 沪深300收盘站上MA20后自动转正式推荐+执行单"
+        )
+
     # 诊断信息 (排查空推荐用)
     if diag:
         lines.append("")

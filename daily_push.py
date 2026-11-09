@@ -329,10 +329,30 @@ def main():
     filtered = stock_pool_filter(data, names_map=names)
     sideways_veto = False
     cooled = 0
+    # [观察推荐 2026-11-09] 熊市不再直接跳过: 照常跑完整选股管线取Top1作
+    # "今日观察参考" — 仅观察·无执行单·不入正式推荐/predictions/冷却;
+    # 闸门重开后该票自动按正式流程参与推荐 (每日Top1可能重复, 重复本身=预备队强度信息)
+    watch_pick = None
     if regime == "bear":
         results = []
         fund_rejects = []
-        print("  大盘bear(沪深300<MA20×0.98): 空仓, 跳过选股")
+        print("  大盘bear(沪深300<MA20×0.98): 空仓, 不推票; 跑观察推荐管线")
+        try:
+            _w = run_trend_analysis(filtered, names_map=names,
+                                    top_n=params.get("top_n", 5), params=params)
+            _w = [r for r in _w
+                  if float(r.get("entry_price", 0)) <= MAX_AFFORDABLE_PRICE]
+            _w, fund_rejects = fundamental_filter(_w)
+            _w = apply_fund_flow(_w)
+            if _w:
+                watch_pick = _w[0]
+                print(f"  📋 观察参考Top1: {watch_pick['name']} ¥{watch_pick['entry_price']} "
+                      f"评分{watch_pick.get('score', '?')} "
+                      f"主力{watch_pick.get('fund_flag', '?')}{watch_pick.get('fund_flow_main_yi', '?')}亿")
+            else:
+                print("  📋 全池无合格候选, 观察位空")
+        except Exception as e:
+            print(f"  [WARN] 观察推荐管线失败: {str(e)[:60]}")
     else:
         results = run_trend_analysis(filtered, names_map=names,
                                      top_n=params.get("top_n", 5), params=params)
@@ -414,10 +434,11 @@ def main():
     diag = {
         "数据支数": len(data),
         "池子过滤后": len(filtered),
-        "策略候选": "0(空仓跳过)" if regime == "bear" else cand_count,
+        "策略候选": ("0(空仓)+观察位" + ("1" if watch_pick else "0")) if regime == "bear" else cand_count,
         "基本面拦截": fund_rejects,
         "最终推荐": len(results),
         "大盘状态": regime_label.get(regime, regime),
+        "观察推荐": watch_pick,
         "数据完整": "否(限流,仅供参考)" if data_incomplete else "是",
         "市场情绪": f"{senti_score}({senti_level})" + (" ⚠️冰点压制" if senti_suppress else ""),
         "推送冷却": f"剔除{cooled}支(近3日已推荐)" if cooled else "无",
@@ -444,6 +465,7 @@ def main():
         "final_count": len(results),
         "data_count": len(data),
         "regime": regime,
+        "watch_pick": (watch_pick or {}).get("code"),
         "ai_used": bool(ai_used),
         "fund_flags": fund_flags,
     }
