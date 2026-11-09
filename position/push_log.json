@@ -1,11 +1,12 @@
 {
-  "time_bjt": "2026-11-06 23:20:43",
+  "time_bjt": "2026-11-09 15:50:03",
   "feishu_ok": true,
-  "feishu_skipped": false,
-  "event": "schedule",
+  "feishu_skipped": true,
+  "event": "push",
   "final_count": 0,
   "data_count": 49,
   "regime": "sideways",
+  "watch_pick": null,
   "ai_used": false,
   "fund_flags": []
 }
