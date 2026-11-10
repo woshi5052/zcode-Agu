@@ -784,5 +784,32 @@
       "tp1": 26.18,
       "tp2": 28.19
     }
+  },
+  {
+    "id": "002050_2026-11-10",
+    "date": "2026-11-10",
+    "code": "002050",
+    "name": "三花智控",
+    "entry_price": 35.35,
+    "stop_loss": 34.64,
+    "stop_pct": 2.01,
+    "confidence": "MEDIUM",
+    "signals": [
+      "MACD金叉+RSI>50",
+      "🟢主力净流入2.81亿",
+      "观察参考:一手超10%仓位预算,模拟盘未跟踪"
+    ],
+    "status": "pending",
+    "pnl_pct": null,
+    "closed_date": null,
+    "trade_plan": {
+      "mode": "watch",
+      "shares": null,
+      "first_shares": null,
+      "add_shares": null,
+      "add_price": null,
+      "tp1": 38.18,
+      "tp2": 40.1
+    }
   }
 ]
