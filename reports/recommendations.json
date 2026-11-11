@@ -1,39 +1,6 @@
 {
-  "date": "2026-11-10",
-  "generated_at": "2026-11-10T15:47:06.050332",
-  "count": 1,
-  "recommendations": [
-    {
-      "code": "002050",
-      "name": "三花智控",
-      "entry_price": 35.35,
-      "stop_loss": 34.64,
-      "stop_pct": 2.01,
-      "target_price": 40.1,
-      "target_pct": 13.44,
-      "holding_days": 20,
-      "score": 74.7,
-      "confidence": "MEDIUM",
-      "signals": [
-        "MACD金叉+RSI>50",
-        "🟢主力净流入2.81亿",
-        "观察参考:一手超10%仓位预算,模拟盘未跟踪"
-      ],
-      "current_price": 35.35,
-      "reason": "趋势确认",
-      "regime": "sideways",
-      "max_positions": 1,
-      "fund_flow_main_yi": 2.81,
-      "fund_flag": "IN",
-      "trade_plan": {
-        "mode": "watch",
-        "stop_loss": 34.64,
-        "tp1": 38.18,
-        "tp2": 40.1,
-        "note": "一手¥3535 > 预算¥1000, 仅观察不建仓"
-      },
-      "ai_source": "DeepSeek",
-      "ai_sentiment": "🟢 止损近支撑企稳"
-    }
-  ]
+  "date": "2026-11-11",
+  "generated_at": "2026-11-11T15:35:38.701101",
+  "count": 0,
+  "recommendations": []
 }
