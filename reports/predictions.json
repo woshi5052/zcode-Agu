@@ -772,9 +772,9 @@
       "🟢主力净流入0.95亿",
       "观察参考:一手超10%仓位预算,模拟盘未跟踪"
     ],
-    "status": "pending",
-    "pnl_pct": null,
-    "closed_date": null,
+    "status": "hit_stop",
+    "pnl_pct": -1.98,
+    "closed_date": "2026-11-12",
     "trade_plan": {
       "mode": "watch",
       "shares": null,
@@ -799,9 +799,9 @@
       "🟢主力净流入2.81亿",
       "观察参考:一手超10%仓位预算,模拟盘未跟踪"
     ],
-    "status": "pending",
-    "pnl_pct": null,
-    "closed_date": null,
+    "status": "hit_stop",
+    "pnl_pct": -2.01,
+    "closed_date": "2026-11-12",
     "trade_plan": {
       "mode": "watch",
       "shares": null,
