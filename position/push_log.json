@@ -1,8 +1,8 @@
 {
-  "time_bjt": "2026-11-13 23:39:28",
+  "time_bjt": "2026-11-19 15:04:34",
   "feishu_ok": true,
-  "feishu_skipped": false,
-  "event": "schedule",
+  "feishu_skipped": true,
+  "event": "push",
   "final_count": 0,
   "data_count": 49,
   "regime": "bear",

@@ -48,6 +48,22 @@ def get_names_map(codes: list) -> dict:
     return names
 
 
+def _fetch_tx_fallback(code: str):
+    """[修复 2026-11-19] 腾讯接口回退
+    背景: 新浪接口(stock_zh_a_daily)自11-16起对GitHub Actions美国IP拒绝服务,
+    推送连续3个交易日断流且静默(Actions假绿)。腾讯接口对海外IP宽容。
+    注: 腾讯volume单位为手(新浪为股), 系统内volume仅做票内比值(量比/停牌), 单位兼容。
+    """
+    import datetime as _dt
+    end = _dt.date.today()
+    start = end - _dt.timedelta(days=400)
+    df = ak.stock_zh_a_hist_tx(symbol=_format_code(code),
+                               start_date=start.strftime("%Y%m%d"),
+                               end_date=end.strftime("%Y%m%d"),
+                               adjust="qfq")
+    return df
+
+
 def fetch_data(codes: list, max_stocks: int = 300) -> dict:
     """拉取全量K线 (AKShare东财)
     用北京时间判断: 15:30前运行时剔除当日未完成K线, 只用完整交易日数据
@@ -64,7 +80,7 @@ def fetch_data(codes: list, max_stocks: int = 300) -> dict:
     fail_count = 0
     for i, code in enumerate(codes):
         df = None
-        # 重试2次 (AKShare偶发限流)
+        # 重试2次 (AKShare偶发限流); 新浪失败→腾讯回退 (2026-11-19 海外IP被拒事故)
         for attempt in range(2):
             try:
                 df = ak.stock_zh_a_daily(symbol=_format_code(code), adjust="qfq")
@@ -73,6 +89,11 @@ def fetch_data(codes: list, max_stocks: int = 300) -> dict:
             except Exception:
                 df = None
                 time.sleep(0.5)
+        if df is None or len(df) <= 50:
+            try:
+                df = _fetch_tx_fallback(code)
+            except Exception:
+                df = None
         if df is None or len(df) <= 50:
             fail_count += 1
         else:
@@ -299,8 +320,24 @@ def main():
     print(f"获取: {len(data)}/{len(codes)} 支 (低价股池)")
 
     if len(data) < 10:
-        print("数据不足，跳过")
-        return
+        # [修复 2026-11-19] 数据饥饿必须响亮失败: 写失败标记进push_log + exit(1)
+        # (此前静默return, Actions假绿3天无人发现; 11-16起新浪拒海外IP即此路径)
+        print(f"[ERROR] 数据严重不足: {len(data)}/{len(codes)} 支, 推送中断")
+        import datetime as _dt
+        from os import getenv as _getenv
+        fail_log = {
+            "time_bjt": (_dt.datetime.utcnow() + _dt.timedelta(hours=8)).strftime("%Y-%m-%d %H:%M:%S"),
+            "feishu_ok": False,
+            "feishu_skipped": False,
+            "event": _getenv("GITHUB_EVENT_NAME", "local"),
+            "error": "DATA_STARVED",
+            "data_count": len(data),
+            "expected_count": len(codes),
+            "note": "新浪+腾讯双源均失败, 检查AKShare版本与接口状态",
+        }
+        with open("position/push_log.json", "w") as f:
+            json.dump(fail_log, f, ensure_ascii=False, indent=2)
+        sys.exit(1)
 
     # 数据完整性: 49支池拉到<40支说明被限流, 样本有偏, 结果仅供参考
     data_incomplete = len(data) < 40

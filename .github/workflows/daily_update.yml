@@ -56,6 +56,9 @@ jobs:
           python scripts/watch_scan.py || echo "watch scan failed (非致命, 不阻断)"
 
       - name: Commit Paper State
+        # [修复 2026-11-19] always: daily_push数据饥饿exit(1)时, 仍要commit push_log.json的
+        # DATA_STARVED失败标记到远端, 供排查(否则失败标记只留在runner上被丢弃)
+        if: always()
         run: |
           git config user.name "quant-bot"
           git config user.email "bot@ashare-quant.dev"
