@@ -61,3 +61,5 @@
 2026-11-24 19:05:39|SNAPSHOT|cash=9986 pos=0 total=9986 pnl=-14 positions=0
 2026-11-25 18:10:58|SNAPSHOT|cash=9986 pos=0 total=9986 pnl=-14 positions=0
 2026-11-26 17:55:55|SNAPSHOT|cash=9986 pos=0 total=9986 pnl=-14 positions=0
+2026-11-27 17:44:15|BUY_SIGNAL|000725 | shares=200 | signal_price=4.80 | score=75
+2026-11-27 17:44:15|SNAPSHOT|cash=9986 pos=0 total=9986 pnl=-14 positions=0
